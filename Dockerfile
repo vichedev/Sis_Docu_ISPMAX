@@ -43,5 +43,10 @@ EXPOSE 8387
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 \
   CMD wget -q -O /dev/null http://127.0.0.1:8387/healthz || exit 1
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/ispmax-entrypoint"]
+# boot.sh ejecuta docker/entrypoint.sh DEL REPOSITORIO montado en /app: "Actualizar el sistema" (git pull) tambien
+# actualiza el arranque sin reconstruir la imagen. La copia de la imagen es solo el respaldo.
+COPY docker/boot.sh /usr/local/bin/ispmax-boot
+RUN sed -i 's/\r$//' /usr/local/bin/ispmax-boot && chmod 0755 /usr/local/bin/ispmax-boot
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/ispmax-boot"]
 CMD ["node", "portal/server/index.mjs"]

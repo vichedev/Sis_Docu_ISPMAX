@@ -39,9 +39,9 @@ if [ "$(id -u)" = "0" ] && [ -z "${ISPMAX_DROPPED:-}" ]; then
   export ISPMAX_DROPPED=1 HOME=/tmp/home
   if [ "$PUID" = "0" ]; then
     log "AVISO: se ejecuta como root (PUID=0); los archivos que Git actualice quedarán de root."
-    exec "$0" "$@"
+    exec bash "$0" "$@"
   fi
-  exec su-exec "$PUID:$PGID" "$0" "$@"
+  exec su-exec "$PUID:$PGID" bash "$0" "$@"
 fi
 
 # ── Fase 2: usuario normal ───────────────────────────────────
