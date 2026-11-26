@@ -1,0 +1,52 @@
+[
+ {
+  "id": "clientes/importar/03-resultado-errores",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown.text-teal-6"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Importar Excel",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   },
+   {
+    "upload": {
+     "css": ".q-dialog input[type=file]"
+    },
+    "file": "fixtures/clientes-con-errores-ficticio.xlsx",
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Cargar clientes",
+     "tag": "button"
+    },
+    "wait": 4500
+   },
+   {
+    "hover": {
+     "css": ".q-dialog .q-list .q-icon.text-negative",
+     "index": 0
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "x": 560,
+   "y": 397,
+   "width": 900,
+   "height": 706
+  }
+ }
+]

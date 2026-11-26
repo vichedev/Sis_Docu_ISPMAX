@@ -1,0 +1,592 @@
+[
+ {
+  "id": "clientes/saldos/01-listado-facturas",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 625
+  }
+ },
+ {
+  "id": "clientes/saldos/02-nueva-factura",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Agregar Factura"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/saldos/03-boton-agregar-pago",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 1440,
+   "y": 405,
+   "width": 330,
+   "height": 60
+  },
+  "annotate": [
+   {
+    "n": 1,
+    "css": ".q-table tbody tr td:last-child .q-btn",
+    "index": 0
+   }
+  ]
+ },
+ {
+  "id": "clientes/saldos/04-pago-parcial",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr td:last-child .q-btn",
+     "index": 0
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle",
+     "index": 0
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": ".q-dialog input[type=number]",
+     "index": 1
+    },
+    "value": "12",
+    "wait": 1000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-checkbox",
+     "index": 0
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 955,
+   "y": 684,
+   "width": 440,
+   "height": 232
+  }
+ },
+ {
+  "id": "clientes/saldos/05-pagar-importe-total",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr td:last-child .q-btn",
+     "index": 0
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "x": 955,
+   "y": 555,
+   "width": 430,
+   "height": 50
+  }
+ },
+ {
+  "id": "clientes/saldos/06-excedente",
+  "route": "/clientes/edit/1cfde3d6-e3a2-4795-b046-01beebc397cd",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr td:last-child .q-btn",
+     "index": 0
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle",
+     "index": 0
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": ".q-dialog input[type=number]",
+     "index": 1
+    },
+    "value": "20",
+    "wait": 1000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-checkbox",
+     "index": 0
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 955,
+   "y": 684,
+   "width": 440,
+   "height": 232
+  }
+ },
+ {
+  "id": "clientes/saldos/07-listado-cargos",
+  "route": "/clientes/edit/4e52c456-962d-47ff-8a19-9d4a8a2c1be9",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Cargos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr td .q-btn",
+     "index": 0
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 668
+  }
+ },
+ {
+  "id": "clientes/saldos/08-agregar-saldo",
+  "route": "/clientes/edit/4e52c456-962d-47ff-8a19-9d4a8a2c1be9",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Cargos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Agregar cargo recurrente"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-btn-group .q-btn",
+     "index": 0
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-btn-toggle .q-btn",
+     "index": 0
+    },
+    "wait": 600
+   },
+   {
+    "key": "5",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "index": 1,
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/cortes/05-menu-clientes",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 14,
+   "y": 335,
+   "width": 280,
+   "height": 190
+  }
+ },
+ {
+  "id": "clientes/cortes/06-boton-editar",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 1650,
+   "y": 235,
+   "width": 240,
+   "height": 190
+  },
+  "hide": [
+   ".ag-center-cols-viewport"
+  ],
+  "annotate": [
+   {
+    "n": 1,
+    "text": "edit",
+    "tag": "i",
+    "exact": true
+   }
+  ]
+ },
+ {
+  "id": "clientes/cortes/07-pestana-facturacion",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "text": "Facturación/Pagos",
+   "tag": ".q-tab",
+   "pad": 10
+  }
+ },
+ {
+  "id": "clientes/cortes/08-canal-recordatorio",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Configuración",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 8
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 526,
+   "y": 705,
+   "width": 690,
+   "height": 215
+  }
+ },
+ {
+  "id": "ajustes/cortes/03-menu-ajustes",
+  "route": "/ajustes",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 14,
+   "y": 470,
+   "width": 280,
+   "height": 60
+  }
+ },
+ {
+  "id": "ajustes/cortes/04-acceso",
+  "route": "/ajustes",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 330,
+   "y": 120,
+   "width": 180,
+   "height": 176
+  }
+ },
+ {
+  "id": "ajustes/cortes/05-selector-router",
+  "route": "/ajustes/servicio",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 0
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 1095,
+   "y": 115,
+   "width": 640,
+   "height": 300
+  }
+ },
+ {
+  "id": "clientes/perfil/01-resumen",
+  "route": "/clientes/edit/67ea4ce8-d65e-482c-a7ae-fa0742c6fd1b",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 760
+  }
+ },
+ {
+  "id": "clientes/perfil/02-consumo",
+  "route": "/clientes/edit/67ea4ce8-d65e-482c-a7ae-fa0742c6fd1b",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "captureBeyondViewport": false,
+  "steps": [
+   {
+    "click": {
+     "text": "Consumo",
+     "tag": ".q-tab"
+    },
+    "wait": 8000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 925
+  }
+ },
+ {
+  "id": "ajustes/facturacion/04-base-de-creacion",
+  "route": "/ajustes/facturacion",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 350,
+   "y": 500,
+   "width": 740,
+   "height": 120
+  }
+ },
+ {
+  "id": "ajustes/facturacion/05-generar-ahora",
+  "route": "/ajustes/facturacion",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 1090,
+   "y": 380,
+   "width": 745,
+   "height": 240
+  }
+ },
+ {
+  "id": "cobranza/pagos-registrados/03-reporte",
+  "route": "/",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Finanzas",
+     "within": ".q-drawer"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Registrar Pago",
+     "within": ".q-drawer"
+    },
+    "wait": 4000
+   },
+   {
+    "click": {
+     "text": "Pagos registrados",
+     "tag": ".q-tab"
+    },
+    "wait": 4500
+   },
+   {
+    "click": {
+     "text": "Reporte",
+     "tag": ".q-btn"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 838,
+   "y": 333,
+   "width": 1010,
+   "height": 235
+  }
+ },
+ {
+  "id": "acceso/notificaciones/01-panel",
+  "route": "/ajustes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "notifications_active",
+     "tag": "button"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 1300,
+   "y": 20,
+   "width": 530,
+   "height": 695
+  }
+ },
+ {
+  "id": "almacen/compras/02-listado",
+  "route": "/compras",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 450
+  }
+ }
+]

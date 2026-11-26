@@ -1,0 +1,611 @@
+[
+ {
+  "id": "facturacion/grupos/01-nuevo-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Grupos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "type": {
+     "text": "Nombre (opcional)",
+     "tag": "label"
+    },
+    "value": "Casa y bodega",
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "IPV4 10.10.10.16"
+    },
+    "wait": 400
+   },
+   {
+    "click": {
+     "text": "IPV4 10.10.10.32"
+    },
+    "wait": 400
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 850
+  },
+  "annotate": [
+   {
+    "n": 1,
+    "text": "Nombre (opcional)",
+    "tag": "label"
+   },
+   {
+    "n": 2,
+    "css": ".q-checkbox",
+    "index": 0
+   },
+   {
+    "n": 3,
+    "text": "Crear grupo",
+    "tag": "button"
+   }
+  ]
+ },
+ {
+  "id": "facturacion/grupos/02-tarjeta-del-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Grupos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 380,
+   "y": 410,
+   "width": 1420,
+   "height": 248
+  }
+ },
+ {
+  "id": "facturacion/grupos/03-tercero-del-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Grupos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Facturar a tercero (todo el grupo)"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "css": ".q-btn.self-stretch",
+     "index": 0
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-toggle",
+     "index": 0
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".col-sm-4 .q-select",
+     "index": 0
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "text": "RUC",
+     "tag": ".q-item"
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": ".col-sm-4 input",
+     "index": 1
+    },
+    "value": "1790000001001",
+    "wait": 300
+   },
+   {
+    "type": {
+     "css": ".col-sm-4 input",
+     "index": 2
+    },
+    "value": "Comercial Ejemplo S.A.",
+    "wait": 300
+   },
+   {
+    "type": {
+     "css": ".col-sm-4 input",
+     "index": 3
+    },
+    "value": "Av. Ejemplo 123 y Calle Prueba",
+    "wait": 300
+   },
+   {
+    "type": {
+     "css": ".col-sm-4 input",
+     "index": 5
+    },
+    "value": "991234567",
+    "wait": 300
+   },
+   {
+    "type": {
+     "css": ".col-sm-4 input",
+     "index": 6
+    },
+    "value": "facturas@ejemplo.test",
+    "wait": 500
+   }
+  ],
+  "clip": {
+   "x": 380,
+   "y": 410,
+   "width": 1420,
+   "height": 598
+  }
+ },
+ {
+  "id": "facturacion/grupos/04-facturacion-automatica-del-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Grupos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Facturación automática del grupo"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Activar facturación automática del grupo"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Forma de pago",
+     "tag": "label"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 380,
+   "y": 410,
+   "width": 1420,
+   "height": 575
+  }
+ },
+ {
+  "id": "facturacion/servicio/01-facturacion-automatica",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 3000,
+  "width": 1900,
+  "height": 2000,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Configuración",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-toggle",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 13
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 900
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 940,
+   "width": 1590,
+   "height": 410
+  }
+ },
+ {
+  "id": "facturacion/sucursales/01-listado",
+  "route": "/ajustes/empresa",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "SUCURSALES",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 310
+  }
+ },
+ {
+  "id": "facturacion/sucursales/02-formulario",
+  "route": "/ajustes/empresa",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "SUCURSALES",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Agregar Sucursal",
+     "tag": "button"
+    },
+    "wait": 2500
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 0
+    },
+    "value": "Sucursal Norte",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 1
+    },
+    "value": "Av. Ejemplo y Calle Prueba",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 2
+    },
+    "value": "2",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 3
+    },
+    "value": "1",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 4
+    },
+    "value": "125",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 5
+    },
+    "value": "1",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 6
+    },
+    "value": "8",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 7
+    },
+    "value": "1",
+    "wait": 250
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 9
+    },
+    "value": "40",
+    "wait": 300
+   },
+   {
+    "click": {
+     "text": "Nueva Sucursal"
+    },
+    "wait": 400
+   }
+  ],
+  "clip": {
+   "x": 320,
+   "y": 116,
+   "width": 1540,
+   "height": 545
+  }
+ },
+ {
+  "id": "facturacion/factura-libre/01-formulario",
+  "route": "/ventas/add",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-select",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "LUCÍA MARGARITA PAREDES",
+     "tag": ".q-item"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 2
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 3
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "type": {
+     "css": "input[type=number]",
+     "index": 0
+    },
+    "value": "2",
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": "textarea",
+     "index": 0
+    },
+    "value": "Instalación de equipo adicional",
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "Nueva Factura"
+    },
+    "wait": 500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 815
+  }
+ },
+ {
+  "id": "mensajeria/mensajes-masivos/01-nuevo-envio",
+  "route": "/ajustes/mensajeria",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Mensajes Masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 1800
+   },
+   {
+    "type": {
+     "css": ".q-editor__content",
+     "index": 0
+    },
+    "value": "Estimado cliente {nombre_cliente}: el sábado 31 de octubre, de 01:00 a 03:00, haremos un mantenimiento programado en la red y el servicio se interrumpirá unos minutos. Disculpe las molestias. {empresa}",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 790
+  }
+ },
+ {
+  "id": "mensajeria/plantillas/01-promesa-de-pago",
+  "route": "/ajustes/plantillas",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Promesa de pago",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "type": {
+     "css": ".q-editor__content",
+     "index": 0
+    },
+    "value": "Hola {cliente}, registramos su promesa de pago de {total} hasta el {fecha_promesa}. Gracias por avisar. {empresa}",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 80,
+   "width": 1590,
+   "height": 600
+  }
+ }
+]

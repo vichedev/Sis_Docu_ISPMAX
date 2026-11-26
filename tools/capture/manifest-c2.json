@@ -1,0 +1,342 @@
+[
+ {
+  "id": "facturacion/facturas/01-listado",
+  "route": "/ventas",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 495
+  }
+ },
+ {
+  "id": "facturacion/facturas/02-agregar",
+  "route": "/ventas/add",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 815
+  }
+ },
+ {
+  "id": "cobranza/pagos-registrados/01-tabla",
+  "route": "/",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Finanzas",
+     "within": ".q-drawer"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Registrar Pago",
+     "within": ".q-drawer"
+    },
+    "wait": 4000
+   },
+   {
+    "click": {
+     "text": "Pagos registrados",
+     "tag": ".q-tab"
+    },
+    "wait": 4500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1200
+  }
+ },
+ {
+  "id": "cobranza/pagos-registrados/02-filtros",
+  "route": "/",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Finanzas",
+     "within": ".q-drawer"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Registrar Pago",
+     "within": ".q-drawer"
+    },
+    "wait": 4000
+   },
+   {
+    "click": {
+     "text": "Pagos registrados",
+     "tag": ".q-tab"
+    },
+    "wait": 4500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 400
+  }
+ },
+ {
+  "id": "ajustes/formas-pago/01-listado",
+  "route": "/ajustes/forma-pago",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 450
+  }
+ },
+ {
+  "id": "ajustes/formas-pago/02-detalle",
+  "route": "/ajustes/forma-pago",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "text": "Detalle formas pago",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 645
+  }
+ },
+ {
+  "id": "finanzas/ingresos-egresos/01-panel",
+  "route": "/ingresos-egresos",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1200
+  }
+ },
+ {
+  "id": "finanzas/ingresos-egresos/02-formulario",
+  "route": "/ingresos-egresos",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1000,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "text": "Nuevo registro"
+    },
+    "wait": 1800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/proveedores/01-listado",
+  "route": "/proveedores",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 395
+  }
+ },
+ {
+  "id": "almacen/proveedores/02-formulario",
+  "route": "/proveedores",
+  "settle": 3000,
+  "width": 1900,
+  "height": 900,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar proveedor"
+    },
+    "wait": 1800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/categorias/01-listado",
+  "route": "/categories",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 420
+  }
+ },
+ {
+  "id": "almacen/equipos/02-inventario",
+  "route": "/equipos",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 815
+  }
+ },
+ {
+  "id": "finanzas/conciliacion/01-pantalla",
+  "route": "/conciliacion-bancaria",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   },
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA DIRECTA B. DEMO NORTE",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "key": "Escape",
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 480
+  }
+ },
+ {
+  "id": "cobranza/promesas/02-listado-con-estados",
+  "route": "/promesas-pago",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-table",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 550
+  }
+ },
+ {
+  "id": "cobranza/transacciones/02-listado-con-cobros",
+  "route": "/transacciones/true",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1140
+  }
+ },
+ {
+  "id": "clientes/crear/02-datos-personales",
+  "route": "/clientes/add",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 720
+  }
+ },
+ {
+  "id": "cobranza/cobros-pasarela/01-pantalla",
+  "route": "/cobros-pasarela",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 540
+  },
+  "hide": [
+   ".q-banner.bg-red-1"
+  ]
+ }
+]

@@ -1,0 +1,20 @@
+{
+  "generado": "2026-11-05T21:14:26.460Z",
+  "funcionalidadesDetectadas": 596,
+  "funcionalidadesExcluidas": 16,
+  "funcionalidadesEnAlcance": 580,
+  "funcionalidadesDocumentadas": 580,
+  "coberturaPorcentaje": 100,
+  "funcionalidadesVerificadas": 580,
+  "coberturaVerificadaPorcentaje": 100,
+  "paginas": 285,
+  "paginasConCaptura": 138,
+  "paginasPendientesDeValidacion": 0,
+  "paginasSinMetadatos": 0,
+  "referenciasAIdDesconocido": 0,
+  "modulosSinDocumentacion": [],
+  "preguntas": {
+    "total": 466,
+    "variantes": 1924
+  }
+}

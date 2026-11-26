@@ -1,0 +1,461 @@
+[
+ {
+  "id": "red/onu/04-smartolt-listado",
+  "route": "/smartOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1050
+  }
+ },
+ {
+  "id": "red/onu/05-smartolt-zonas",
+  "route": "/smartOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "click": {
+     "text": "ZONAS",
+     "tag": ".q-tab"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 340,
+   "width": 1590,
+   "height": 420
+  }
+ },
+ {
+  "id": "red/onu/06-smartolt-vlans",
+  "route": "/smartOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "click": {
+     "text": "VLANS",
+     "tag": ".q-tab"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 340,
+   "width": 1590,
+   "height": 470
+  }
+ },
+ {
+  "id": "red/onu/07-smartolt-onus-esperando",
+  "route": "/smartOLT/unconfigured/1",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 440
+  }
+ },
+ {
+  "id": "red/onu/08-smartolt-autorizar-formulario",
+  "route": "/smartOLT/authorize/1?olt_name=OLT%20DEMO%20NORTE&pon_type=gpon&board=2&port=5&unique_external_id=ZTEGDEMO0099&onu_type=ZTE-F601",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "type": {
+     "css": "input[maxlength='60']"
+    },
+    "value": "CLIENTE DEMO NUEVO",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": "textarea"
+    },
+    "value": "Calle Demo 123 y Pasaje 2",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-card .text-subtitle1"
+    },
+    "wait": 300
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 105,
+   "width": 1590,
+   "height": 1275
+  }
+ },
+ {
+  "id": "red/onu/09-smartolt-autorizar-confirmar",
+  "route": "/smartOLT/authorize/1?olt_name=OLT%20DEMO%20NORTE&pon_type=gpon&board=2&port=5&unique_external_id=ZTEGDEMO0099&onu_type=ZTE-F601",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "type": {
+     "css": "input[maxlength='60']"
+    },
+    "value": "CLIENTE DEMO NUEVO",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": "textarea"
+    },
+    "value": "Calle Demo 123 y Pasaje 2",
+    "wait": 400
+   },
+   {
+    "click": {
+     "text": "Autorizar",
+     "tag": "button"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/onu/10-adminolt-listado",
+  "route": "/adminOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock-adminolt.json",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1110
+  }
+ },
+ {
+  "id": "red/onu/11-adminolt-perfiles",
+  "route": "/adminOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock-adminolt.json",
+  "steps": [
+   {
+    "click": {
+     "text": "PROFILES",
+     "tag": ".q-tab"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 340,
+   "width": 1590,
+   "height": 585
+  }
+ },
+ {
+  "id": "red/onu/12-adminolt-onus-esperando",
+  "route": "/adminOLT/no-autorizadas",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock-adminolt.json",
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 370
+  }
+ },
+ {
+  "id": "red/onu/13-adminolt-autorizar-formulario",
+  "route": "/adminOLT/autorizar?pon_type=gpon&board=2&port=5&sn=ZTEGDEMO0099&onu_type=ZTE-F601&olt_id=1&olt_name=OLT%20DEMO%20NORTE&interface_id=7",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock-adminolt.json",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 2
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "NAP-DEMO-01",
+     "within": ".q-menu"
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": "input[type=number]",
+     "index": 1
+    },
+    "value": "100",
+    "wait": 300
+   },
+   {
+    "type": {
+     "css": "input[type=number]",
+     "index": 2
+    },
+    "value": "100",
+    "wait": 300
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 3
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "100M",
+     "within": ".q-menu"
+    },
+    "wait": 600
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 4
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "100M",
+     "within": ".q-menu"
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": "input[maxlength='60']"
+    },
+    "value": "CLIENTE DEMO NUEVO",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-card .text-subtitle1"
+    },
+    "wait": 300
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 105,
+   "width": 1590,
+   "height": 1000
+  }
+ },
+ {
+  "id": "red/onu/14-ficha-icono-vincular",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 360
+  },
+  "annotate": [
+   {
+    "css": ".q-table button:has(img[src*='smartOLT'])",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "red/onu/15-ficha-vincular-smartolt",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-table button:has(img[src*='smartOLT'])"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Onus autorizados disponibles",
+     "within": ".q-menu"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "OLT DEMO NORTE",
+     "within": ".q-menu"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/onu/16-ficha-vincular-adminolt",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock-adminolt.json",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "ADM",
+     "tag": "button"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/onu/17-smartolt-vincular-desde-listado",
+  "route": "/smartOLT",
+  "waitFor": ".q-table tbody tr",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/olt-mock.json",
+  "steps": [
+   {
+    "click": {
+     "css": "tbody tr:nth-child(6) .q-btn",
+     "index": 0
+    },
+    "wait": 3000
+   },
+   {
+    "type": {
+     "css": ".q-dialog input",
+     "index": 0
+    },
+    "value": "ANA",
+    "wait": 3000
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ }
+]

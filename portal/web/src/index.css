@@ -1,0 +1,164 @@
+/* Portal del manual ISPMAX: Tailwind CSS v4 (configuración en CSS).
+   Tokens semánticos en :root / [data-theme=dark]; @theme los expone como utilidades
+   (bg-subtle, text-ink-3, border-line, bg-accent…). Paleta por defecto de Tailwind desactivada
+   a propósito: solo existen los colores del sistema. Guía: portal/web/DESIGN.md */
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --bg: #ffffff;
+  --bg-side: #f6f6f8;
+  --bg-subtle: #f5f5f7;
+  --bg-muted: #ececf0;
+  --bg-raised: #ffffff;
+  --border: #e4e4e9;
+  --border-strong: #d0d0d8;
+  --ink: #18181d;
+  --ink-2: #474753;
+  --ink-3: #686874;
+  --ink-4: #a2a2ad;
+  --accent: #5b4bd8;
+  --accent-hover: #4a3ac4;
+  --accent-fg: #ffffff;
+  --accent-soft: #f0eefc;
+  --accent-line: #d9d4f7;
+  --accent-ink: #4a3ac4;
+  --signal: #0ea5e9;
+  --ring: rgb(91 75 216 / 0.22);
+  --ok: #17794a;
+  --ok-soft: #e6f4ec;
+  --warn: #8a5300;
+  --warn-soft: #fbf1dc;
+  --warn-dot: #d98a00;
+  --danger: #c0302b;
+  --danger-hover: #a42520;
+  --danger-soft: #fcebea;
+  --scrim: rgb(16 16 22 / 0.42);
+  --pop: 0 1px 2px rgb(20 20 30 / 0.06), 0 8px 24px rgb(20 20 30 / 0.1);
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  --bg: #131316;
+  --bg-side: #0e0e11;
+  --bg-subtle: #19191d;
+  --bg-muted: #25252b;
+  --bg-raised: #1b1b20;
+  --border: #2a2a31;
+  --border-strong: #3a3a43;
+  --ink: #ececf1;
+  --ink-2: #bdbdc8;
+  --ink-3: #91919d;
+  --ink-4: #5d5d69;
+  --accent: #6a59f0;
+  --accent-hover: #7c6dfa;
+  --accent-fg: #ffffff;
+  --accent-soft: #211e3a;
+  --accent-line: #3a3370;
+  --accent-ink: #ab9ffc;
+  --signal: #38bdf8;
+  --ring: rgb(139 125 251 / 0.35);
+  --ok: #4cc38a;
+  --ok-soft: #13271c;
+  --warn: #e3b04b;
+  --warn-soft: #2a2213;
+  --warn-dot: #e3a72f;
+  --danger: #f17c74;
+  --danger-hover: #f59a93;
+  --danger-soft: #2d1716;
+  --scrim: rgb(0 0 0 / 0.6);
+  --pop: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 30px rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 14px;
+  --text-base--line-height: 21px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 19px;
+  --text-xl--line-height: 26px;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 28px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --animate-fade-in: fade-in 0.14s ease-out;
+  --animate-fade: fade 0.14s ease-out;
+  --animate-flash: flash 0.9s ease-out;
+  @keyframes fade {
+    from { opacity: 0; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes flash {
+    from { background-color: var(--accent-soft); }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-side: var(--bg-side);
+  --color-subtle: var(--bg-subtle);
+  --color-muted: var(--bg-muted);
+  --color-raised: var(--bg-raised);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-ink: var(--accent-ink);
+  --color-signal: var(--signal);
+  --color-ring: var(--ring);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-dot: var(--warn-dot);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-scrim: var(--scrim);
+  --shadow-pop: var(--pop);
+}
+
+@layer base {
+  html { background: var(--bg); }
+  body { @apply bg-bg text-base text-ink font-sans antialiased; }
+  ::selection { background: var(--accent-line); color: var(--ink); }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-accent rounded-sm; }
+  a { @apply text-accent-ink underline-offset-2; }
+  a:hover { @apply underline; }
+  code, kbd, pre { @apply font-mono; font-variant-ligatures: none; }
+  svg.lucide { stroke-width: 1.75; flex: none; }
+  ::placeholder { color: var(--ink-4); opacity: 1; }
+  input[type='search']::-webkit-search-cancel-button { cursor: pointer; }
+  /* Texto de componentes MDX en línea (`código`) dentro de párrafos de la interfaz */
+  :where(p, li, dd, span, td) > code { @apply rounded-sm border border-line bg-subtle px-1 text-[0.86em]; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .animate-spin { animation: spin 1.6s linear infinite !important; }
+}

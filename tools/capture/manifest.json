@@ -1,0 +1,604 @@
+[
+  {
+    "id": "acceso/inicio-sesion/01-login",
+    "route": "/login",
+    "settle": 1500,
+    "width": 1280,
+    "height": 720
+  },
+  {
+    "id": "inicio/dashboard/01-vista-general",
+    "route": "/",
+    "settle": 3000,
+    "annotate": [
+      {
+        "text": "Bienvenido",
+        "n": 1,
+        "outline": false
+      },
+      {
+        "text": "Gestion de Red",
+        "n": 2
+      },
+      {
+        "text": "Total Facturas Pagadas",
+        "n": 3
+      }
+    ]
+  },
+  {
+    "id": "ajustes/panel/01-tarjetas",
+    "route": "/ajustes",
+    "settle": 2000
+  },
+  {
+    "id": "ajustes/cortes/01-configuracion",
+    "route": "/ajustes/servicio",
+    "settle": 3000,
+    "fullPage": true,
+    "annotate": [
+      {
+        "text": "Días habilitados para cortes",
+        "n": 1
+      },
+      {
+        "text": "Horarios de cortes",
+        "n": 2
+      },
+      {
+        "text": "Configuración de reintentos",
+        "n": 3
+      },
+      {
+        "text": "Configurar cortes de",
+        "n": 4
+      },
+      {
+        "text": "ACTIVAR",
+        "n": 5
+      }
+    ]
+  },
+  {
+    "id": "ajustes/facturacion/01-configuracion",
+    "route": "/ajustes/facturacion",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "ajustes/plantillas/01-recordatorio-de-pago",
+    "route": "/ajustes/plantillas",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "ajustes/mensajeria/01-whatsapp-y-correo",
+    "route": "/ajustes/mensajeria",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "acceso/roles/01-listado",
+    "route": "/roles-permisos",
+    "settle": 2500
+  },
+  {
+    "id": "acceso/roles/02-nuevo-rol",
+    "route": "/roles-permisos",
+    "settle": 2000,
+    "steps": [
+      {
+        "click": {
+          "text": "Agregar Rol"
+        },
+        "wait": 1500
+      }
+    ]
+  },
+  {
+    "id": "acceso/usuarios/01-listado",
+    "route": "/usuarios",
+    "settle": 2500
+  },
+  {
+    "id": "acceso/usuarios/02-formulario",
+    "route": "/usuarios/add",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "clientes/listado/01-listado",
+    "route": "/clientes",
+    "settle": 3500,
+    "annotate": [
+      {
+        "text": "Por Router:",
+        "n": 1
+      },
+      {
+        "text": "Estado:",
+        "n": 2
+      },
+      {
+        "text": "AGREGAR CLIENTE",
+        "n": 3
+      },
+      {
+        "text": "OCULTAR COLUMNAS",
+        "n": 4
+      },
+      {
+        "text": "Acciones",
+        "n": 5,
+        "exact": true
+      }
+    ]
+  },
+  {
+    "id": "clientes/crear/01-formulario",
+    "route": "/clientes/add",
+    "settle": 3500,
+    "fullPage": true
+  },
+  {
+    "id": "cobranza/registrar-pago/01-pantalla",
+    "route": "/registrar-pago",
+    "settle": 3000
+  },
+  {
+    "id": "cobranza/transacciones/01-listado",
+    "route": "/transacciones/true",
+    "settle": 3000
+  },
+  {
+    "id": "cobranza/promesas/01-listado",
+    "route": "/promesas-pago",
+    "settle": 3000
+  },
+  {
+    "id": "red/routers/01-listado",
+    "route": "/router",
+    "settle": 3000
+  },
+  {
+    "id": "red/routers/02-formulario",
+    "route": "/router/add",
+    "settle": 3000,
+    "fullPage": true,
+    "annotate": [
+      {
+        "text": "Nombre Router:",
+        "n": 1,
+        "outline": false
+      },
+      {
+        "text": "Usuario (API):",
+        "n": 2,
+        "outline": false
+      },
+      {
+        "text": "Version RouterOS:",
+        "n": 3,
+        "outline": false
+      },
+      {
+        "text": "Puerto API:",
+        "n": 4,
+        "outline": false
+      },
+      {
+        "text": "Control de velocidad:",
+        "n": 5,
+        "outline": false
+      },
+      {
+        "text": "Soporte PPPoE:",
+        "n": 6,
+        "outline": false
+      },
+      {
+        "text": "Detrás de NAT:",
+        "n": 7,
+        "outline": false
+      }
+    ]
+  },
+  {
+    "id": "red/planes/01-listado",
+    "route": "/servicios/internet",
+    "settle": 3000
+  },
+  {
+    "id": "red/planes/02-formulario",
+    "route": "/servicios/internert/add",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "red/redes-ipv4/01-listado",
+    "route": "/redes-ipv4",
+    "settle": 3000
+  },
+  {
+    "id": "soporte/tickets/01-listado",
+    "route": "/tickets",
+    "settle": 3000
+  },
+  {
+    "id": "soporte/tickets/02-formulario",
+    "route": "/tickets/add",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "soporte/instalaciones/01-listado",
+    "route": "/instalaciones",
+    "settle": 3000
+  },
+  {
+    "id": "soporte/instalaciones/02-formulario",
+    "route": "/instalaciones/add",
+    "settle": 3000,
+    "fullPage": true
+  },
+  {
+    "id": "facturacion/ventas/01-listado",
+    "route": "/ventas",
+    "settle": 3000
+  },
+  {
+    "id": "almacen/productos/01-listado",
+    "route": "/productos",
+    "settle": 3000
+  },
+  {
+    "id": "almacen/equipos/01-listado",
+    "route": "/equipos",
+    "settle": 3000
+  },
+  {
+    "id": "almacen/compras/01-listado",
+    "route": "/compras",
+    "settle": 3000
+  },
+  {
+    "id": "cobranza/registrar-pago/02-factura-seleccionada",
+    "route": "/registrar-pago",
+    "waitFor": "input[type=search]",
+    "settle": 2000,
+    "steps": [
+      {
+        "type": {
+          "css": "input[type=search]"
+        },
+        "value": "LEMA",
+        "wait": 3500
+      },
+      {
+        "click": {
+          "css": ".q-menu .q-item",
+          "index": 0
+        },
+        "wait": 3500
+      },
+      {
+        "click": {
+          "css": ".q-page .q-select",
+          "index": 1
+        },
+        "wait": 1500
+      },
+      {
+        "click": {
+          "css": ".q-menu .q-item",
+          "index": 0
+        },
+        "wait": 3500
+      }
+    ],
+    "annotate": [
+      {
+        "text": "Buscar cliente por razón social",
+        "n": 1,
+        "outline": false
+      },
+      {
+        "text": "Factura a pagar:",
+        "n": 2,
+        "outline": false
+      },
+      {
+        "text": "Tipo de pago:",
+        "n": 3,
+        "outline": false
+      },
+      {
+        "text": "Forma de pago:",
+        "n": 4,
+        "outline": false
+      },
+      {
+        "text": "Nº transacción:",
+        "n": 5,
+        "outline": false
+      },
+      {
+        "text": "Monto a Cancelar:",
+        "n": 6,
+        "outline": false
+      },
+      {
+        "text": "Notificar pago al cliente:",
+        "n": 7,
+        "outline": false
+      }
+    ]
+  },
+  {
+    "id": "acceso/recuperar/01-olvide-contrasena",
+    "route": "/login",
+    "settle": 1500,
+    "width": 1280,
+    "height": 720,
+    "steps": [
+      {
+        "click": {
+          "text": "¿Olvidaste tu contraseña?",
+          "tag": "button"
+        },
+        "wait": 1200
+      }
+    ],
+    "clip": {
+      "css": ".rc",
+      "pad": 16
+    }
+  },
+  {
+    "id": "acceso/recuperar/02-olvide-correo",
+    "route": "/login",
+    "settle": 1500,
+    "width": 1280,
+    "height": 720,
+    "steps": [
+      {
+        "click": {
+          "text": "¿Olvidaste tu contraseña?",
+          "tag": "button"
+        },
+        "wait": 1000
+      },
+      {
+        "click": {
+          "text": "¿Olvidaste tu correo?",
+          "tag": "button"
+        },
+        "wait": 1000
+      },
+      {
+        "type": {
+          "css": "#rc-termino"
+        },
+        "value": "0990000002",
+        "wait": 500
+      },
+      {
+        "click": {
+          "text": "Buscar mi cuenta",
+          "tag": "button"
+        },
+        "wait": 1800
+      }
+    ],
+    "clip": {
+      "css": ".rc",
+      "pad": 16
+    }
+  },
+  {
+    "id": "acceso/recuperar/03-restablecer-formulario",
+    "route": "/restablecer-password?token=capturamanual00000000000000000000000001&exp={{EXP15}}",
+    "settle": 2000,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      {
+        "type": {
+          "css": "#rp-pass"
+        },
+        "value": "NuevaClave2026",
+        "wait": 400
+      },
+      {
+        "type": {
+          "css": "#rp-conf"
+        },
+        "value": "NuevaClave2026",
+        "wait": 800
+      }
+    ],
+    "clip": {
+      "css": ".rp-card",
+      "pad": 16
+    }
+  },
+  {
+    "id": "acceso/recuperar/04-enlace-invalido",
+    "route": "/restablecer-password",
+    "settle": 1500,
+    "width": 1280,
+    "height": 800,
+    "clip": {
+      "css": ".rp-card",
+      "pad": 16
+    }
+  },
+  {
+    "id": "acceso/recuperar/05-restablecer-exito",
+    "route": "/restablecer-password?token=capturamanual00000000000000000000000002&exp={{EXP15}}",
+    "settle": 2000,
+    "width": 1280,
+    "height": 800,
+    "steps": [
+      {
+        "type": {
+          "css": "#rp-pass"
+        },
+        "value": "NuevaClave2026",
+        "wait": 300
+      },
+      {
+        "type": {
+          "css": "#rp-conf"
+        },
+        "value": "NuevaClave2026",
+        "wait": 600
+      },
+      {
+        "click": {
+          "text": "Guardar contraseña",
+          "tag": "button"
+        },
+        "wait": 1200
+      }
+    ],
+    "clip": {
+      "css": ".rp-card",
+      "pad": 16
+    }
+  },
+  {
+    "id": "ajustes/facturacion/02-limite-suspendidos",
+    "route": "/ajustes/facturacion",
+    "settle": 3000,
+    "width": 1280,
+    "height": 1000,
+    "annotate": [
+      {
+        "text": "Facturas sin pagar para dejar de crear",
+        "n": 1,
+        "outline": false
+      }
+    ]
+  },
+  {
+    "id": "cobranza/registrar-pago/03-dia-de-pago-al-cobrar",
+    "route": "/registrar-pago",
+    "waitFor": "input[type=search]",
+    "settle": 2000,
+    "width": 1280,
+    "height": 1100,
+    "steps": [
+      {
+        "type": {
+          "css": "input[type=search]"
+        },
+        "value": "LEMA",
+        "wait": 3500
+      },
+      {
+        "click": {
+          "css": ".q-menu .q-item",
+          "index": 0
+        },
+        "wait": 3500
+      },
+      {
+        "click": {
+          "css": ".q-page .q-select",
+          "index": 1
+        },
+        "wait": 1500
+      },
+      {
+        "click": {
+          "css": ".q-menu .q-item",
+          "index": 0
+        },
+        "wait": 3500
+      }
+    ],
+    "annotate": [
+      {
+        "text": "Meses Adelantados",
+        "n": 1,
+        "outline": false
+      },
+      {
+        "text": "Día de pago al cobrar",
+        "n": 2,
+        "outline": false
+      }
+    ]
+  },
+  {
+    "id": "red/nap/01-listado-principal-secundaria",
+    "route": "/cajas-nap",
+    "settle": 2500,
+    "width": 1440,
+    "height": 700,
+    "annotate": [
+      {
+        "text": "Tipo de caja",
+        "tag": "th",
+        "n": 1
+      }
+    ]
+  },
+  {
+    "id": "red/nap/02-formulario-secundaria",
+    "route": "/cajas-nap/add",
+    "settle": 2000,
+    "width": 1440,
+    "height": 900,
+    "steps": [
+      {
+        "click": {
+          "css": ".q-select",
+          "index": 1
+        },
+        "wait": 1200
+      },
+      {
+        "click": {
+          "text": "ROUTER DEMO",
+          "within": ".q-menu"
+        },
+        "wait": 1200
+      },
+      {
+        "click": {
+          "css": ".q-radio",
+          "index": 1
+        },
+        "wait": 800
+      },
+      {
+        "click": {
+          "css": ".q-select",
+          "index": 2
+        },
+        "wait": 1200
+      },
+      {
+        "click": {
+          "text": "NAP-CENTRO",
+          "within": ".q-menu"
+        },
+        "wait": 900
+      }
+    ],
+    "annotate": [
+      {
+        "text": "Tipo de caja:",
+        "n": 1,
+        "outline": false
+      },
+      {
+        "text": "Sale de la caja:",
+        "n": 2,
+        "outline": false
+      }
+    ]
+  }
+]

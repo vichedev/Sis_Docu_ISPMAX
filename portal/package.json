@@ -1,0 +1,35 @@
+{
+  "name": "ispmax-manual-portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Portal administrativo del manual ISPMAX (PostgreSQL como fuente de verdad)",
+  "scripts": {
+    "migrate": "node server/migrate.mjs",
+    "import": "node server/sync/import.mjs",
+    "export": "node server/sync/export.mjs",
+    "roundtrip": "node server/sync/roundtrip.mjs",
+    "content:export": "node server/content/cli.mjs export",
+    "content:import": "node server/content/cli.mjs import",
+    "start": "node server/index.mjs",
+    "admin:create": "node server/admin-cli.mjs create",
+    "admin:reset": "node server/admin-cli.mjs reset",
+    "web:install": "npm --prefix web install",
+    "web:build": "npm --prefix web run build",
+    "web:dev": "npm --prefix web run dev",
+    "test": "node --test --test-concurrency=1 test/api.test.mjs test/structure-nav.test.mjs server/sync/frontmatter.test.mjs test/site.test.mjs test/system.test.mjs test/content.test.mjs test/production.test.mjs test/ajustes.test.mjs test/seo.test.mjs test/codefp.test.mjs test/auth-unit.test.mjs test/auth.test.mjs test/security.test.mjs test/hidden-admin.test.mjs",
+    "setup": "node server/migrate.mjs",
+    "security:scan": "node scripts/security-scan.mjs"
+  },
+  "dependencies": {
+    "@fastify/compress": "^8.3.1",
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/static": "^8.0.0",
+    "bcryptjs": "^3.0.0",
+    "fastify": "^5.0.0",
+    "pg": "^8.13.0",
+    "sharp": "^0.34.0",
+    "yaml": "^2.6.0"
+  }
+}

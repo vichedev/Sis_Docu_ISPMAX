@@ -1,0 +1,609 @@
+[
+ {
+  "id": "ajustes/problemas/01-generar-bloqueado",
+  "route": "/ajustes/facturacion",
+  "waitFor": ".q-card",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Por mes (1ro",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Por fecha de pago del cliente",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 200,
+   "width": 1590,
+   "height": 470
+  }
+ },
+ {
+  "id": "ajustes/problemas/02-cortes-no-se-pudo-guardar",
+  "route": "/ajustes/servicio",
+  "waitFor": ".q-card",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Guardar Cambios",
+     "tag": "button"
+    },
+    "wait": 1500
+   }
+  ],
+  "mock": [
+   {
+    "url": "/settings/",
+    "method": "PATCH",
+    "status": 400,
+    "json": {
+     "statusCode": 400,
+     "message": "Fallo al actualizar",
+     "error": "Bad Request"
+    }
+   },
+   {
+    "url": "/programar-queue/",
+    "method": "PUT",
+    "json": {
+     "success": true
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 520
+  }
+ },
+ {
+  "id": "ajustes/problemas/03-masivo-sin-campos",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": "button"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 560
+  }
+ },
+ {
+  "id": "ajustes/problemas/04-masivo-error-dia-31",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Filtrar por Router",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Filtrar por Plan",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "PLAN DEMO MASIVO",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Día de pago",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "31",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": "button",
+     "within": ".q-dialog"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 560
+  }
+ },
+ {
+  "id": "ajustes/problemas/05-masivo-aplicado",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Filtrar por Router",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Filtrar por Plan",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "PLAN DEMO MASIVO",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Día de pago",
+     "tag": ".q-field"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "5",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": "button",
+     "within": ".q-dialog"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 560
+  }
+ },
+ {
+  "id": "ajustes/problemas/06-panel-limitado",
+  "route": "/ajustes",
+  "waitFor": ".menu-item",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 780,
+   "height": 225
+  }
+ },
+ {
+  "id": "ajustes/problemas/07-base-datos-pestanas",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 900,
+   "height": 105
+  }
+ },
+ {
+  "id": "servicios/problemas/01-generar-sin-pendientes",
+  "route": "/ajustes/facturacion",
+  "waitFor": ".q-card",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Generar facturas pendientes",
+     "tag": "button"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Generar",
+     "tag": "button",
+     "within": ".q-dialog",
+     "exact": true
+    },
+    "wait": 2500
+   }
+  ],
+  "mock": [
+   {
+    "url": "/generar-facturas",
+    "method": "POST",
+    "json": {
+     "creadas": 0,
+     "facturas": []
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 700
+  }
+ },
+ {
+  "id": "servicios/problemas/02-nuevo-servicio-facturacion-vacia",
+  "route": "/clientes/edit/a7a7a7a7-0000-4000-8000-000000000010?view=servicios",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar Servicio",
+     "tag": "button"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": "button",
+     "within": ".q-dialog"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "servicios/problemas/03-nuevo-servicio-error-servidor",
+  "route": "/clientes/edit/a7a7a7a7-0000-4000-8000-000000000010?view=servicios",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar Servicio",
+     "tag": "button"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 2
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 3
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 4
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 5
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 6
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": "button",
+     "within": ".q-dialog"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 2
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "type": {
+     "css": ".q-dialog input[type=search]",
+     "index": 1
+    },
+    "value": "10.10.10.96",
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Agregar Servicio",
+     "tag": "button",
+     "within": ".q-dialog"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Agregar",
+     "tag": "button",
+     "exact": true
+    },
+    "wait": 2000
+   }
+  ],
+  "mock": [
+   {
+    "url": "/customers/agregar-servicio",
+    "method": "POST",
+    "status": 400,
+    "json": {
+     "statusCode": 400,
+     "message": [
+      "Ya existe un cliente con el usuario PPPoE: demo.ajs"
+     ],
+     "error": "Bad Request"
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 0,
+   "width": 1590,
+   "height": 1000
+  }
+ },
+ {
+  "id": "servicios/problemas/04-cargos-estados",
+  "route": "/clientes/edit/a7a7a7a7-0000-4000-8000-000000000010?view=facturacion",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cargos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 620
+  }
+ }
+]

@@ -1,0 +1,1340 @@
+[
+ {
+  "url": "/smart-olt/",
+  "method": "POST",
+  "json": {
+   "success": true,
+   "data": {}
+  }
+ },
+ {
+  "url": "/admin-olt/",
+  "method": "POST",
+  "json": {
+   "success": true
+  }
+ },
+ {
+  "url": "/smart-olt",
+  "exact": true,
+  "method": "GET",
+  "json": [
+   {
+    "id": "00000000-0000-4000-a000-000000000001",
+    "dominio": "https://demo.smartolt.invalid",
+    "api": "DEMO-API-KEY",
+    "activarOnu": true
+   }
+  ]
+ },
+ {
+  "url": "/smart-olt/olt/listado",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "id": "1",
+      "name": "OLT DEMO NORTE",
+      "olt_hardware_version": "ZTE-C320",
+      "ip": "192.0.2.1",
+      "telnet_port": 23,
+      "snmp_udp_port": 161,
+      "olt_ip": "192.0.2.1"
+     },
+     {
+      "id": "2",
+      "name": "OLT DEMO SUR",
+      "olt_hardware_version": "ZTE-C300",
+      "ip": "192.0.2.2",
+      "telnet_port": 23,
+      "snmp_udp_port": 161,
+      "olt_ip": "192.0.2.2"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/olts-uptime-temp",
+  "json": {
+   "success": true,
+   "message": "demo",
+   "data": [
+    {
+     "olt_id": "1",
+     "uptime": "22 days, 03:47",
+     "env_temp": "28°C"
+    },
+    {
+     "olt_id": "2",
+     "uptime": "9 days, 11:02",
+     "env_temp": "31°C"
+    }
+   ]
+  }
+ },
+ {
+  "url": "/smart-olt/listado-onus/",
+  "json": {
+   "status": 200,
+   "data": {
+    "status": true,
+    "onus": [
+     {
+      "unique_external_id": "ZTEGDEMO0001",
+      "sn": "ZTEGDEMO0001",
+      "name": "CLIENTE DEMO ALFA",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 1,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-18.42",
+      "signal_1310": "-19.10",
+      "zone_name": "Zona Demo Norte",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0002",
+      "sn": "ZTEGDEMO0002",
+      "name": "CLIENTE DEMO BRAVO",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 1,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-19.05",
+      "signal_1310": "-20.31",
+      "zone_name": "Zona Demo Norte",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0003",
+      "sn": "ZTEGDEMO0003",
+      "name": "CLIENTE DEMO CHARLIE",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 2,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Warning",
+      "signal_1490": "-25.77",
+      "signal_1310": "-26.40",
+      "zone_name": "Zona Demo Norte",
+      "onu_type_name": "ZTE-F660",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0004",
+      "sn": "ZTEGDEMO0004",
+      "name": "SUCURSAL DEMO ESTE",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 2,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-17.90",
+      "signal_1310": "-18.55",
+      "zone_name": "Zona Demo Centro",
+      "onu_type_name": "ZTE-F660",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 200,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0005",
+      "sn": "ZTEGDEMO0005",
+      "name": "CLIENTE DEMO DELTA",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 3,
+      "onu": 1,
+      "status": "Offline",
+      "signal": "-",
+      "signal_1490": null,
+      "signal_1310": null,
+      "zone_name": "Zona Demo Centro",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Disabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0006",
+      "sn": "ZTEGDEMO0006",
+      "name": "CLIENTE DEMO ECO",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 2,
+      "port": 3,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Critical",
+      "signal_1490": "-28.31",
+      "signal_1310": "-29.02",
+      "zone_name": "Zona Demo Sur",
+      "onu_type_name": "HG8310M",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0007",
+      "sn": "ZTEGDEMO0007",
+      "name": "CLIENTE DEMO FOXTROT",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 1,
+      "onu": 1,
+      "status": "Power fail",
+      "signal": "Warning",
+      "signal_1490": "-24.60",
+      "signal_1310": null,
+      "zone_name": "Zona Demo Sur",
+      "onu_type_name": "HG8310M",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0008",
+      "sn": "ZTEGDEMO0008",
+      "name": "OFICINA DEMO GOLF",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 1,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-16.84",
+      "signal_1310": "-17.70",
+      "zone_name": "Zona Demo Centro",
+      "onu_type_name": "ZTE-F660",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 200,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0009",
+      "sn": "ZTEGDEMO0009",
+      "name": "CLIENTE DEMO HOTEL",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 2,
+      "onu": 1,
+      "status": "Offline",
+      "signal": "-",
+      "signal_1490": null,
+      "signal_1310": null,
+      "zone_name": "Zona Demo Sur",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Disabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0010",
+      "sn": "ZTEGDEMO0010",
+      "name": "CLIENTE DEMO INDIA",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 2,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-20.12",
+      "signal_1310": "-21.00",
+      "zone_name": "Zona Demo Norte",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0011",
+      "sn": "ZTEGDEMO0011",
+      "name": "CLIENTE DEMO JULIET",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 4,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-19.77",
+      "signal_1310": "-20.64",
+      "zone_name": "Zona Demo Norte",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0012",
+      "sn": "ZTEGDEMO0012",
+      "name": "CLIENTE DEMO KILO",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 3,
+      "port": 4,
+      "onu": 1,
+      "status": "Offline",
+      "signal": "-",
+      "signal_1490": null,
+      "signal_1310": null,
+      "zone_name": "Zona Demo Sur",
+      "onu_type_name": "ZTE-F660",
+      "pon_type": "gpon",
+      "admin_status": "Disabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0013",
+      "sn": "ZTEGDEMO0013",
+      "name": "CLIENTE DEMO LIMA",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 4,
+      "port": 1,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Warning",
+      "signal_1490": "-26.02",
+      "signal_1310": "-27.15",
+      "zone_name": "Zona Demo Sur",
+      "onu_type_name": "HG8310M",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 100,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     },
+     {
+      "unique_external_id": "ZTEGDEMO0014",
+      "sn": "ZTEGDEMO0014",
+      "name": "SUCURSAL DEMO MIKE",
+      "olt_id": "1",
+      "olt_name": "OLT DEMO NORTE",
+      "board": 4,
+      "port": 1,
+      "onu": 1,
+      "status": "Online",
+      "signal": "Very good",
+      "signal_1490": "-18.00",
+      "signal_1310": "-19.20",
+      "zone_name": "Zona Demo Centro",
+      "onu_type_name": "ZTE-F601",
+      "pon_type": "gpon",
+      "admin_status": "Enabled",
+      "service_ports": [
+       {
+        "service_port": 1,
+        "vlan": 200,
+        "download_speed": "60M",
+        "upload_speed": "30M"
+       }
+      ]
+     }
+    ],
+    "summary": {
+     "boards": [
+      {
+       "key": "2",
+       "total_onus": 6
+      },
+      {
+       "key": "3",
+       "total_onus": 6
+      },
+      {
+       "key": "4",
+       "total_onus": 2
+      }
+     ],
+     "ports": [
+      {
+       "key": "1",
+       "total_onus": 6
+      },
+      {
+       "key": "2",
+       "total_onus": 4
+      },
+      {
+       "key": "3",
+       "total_onus": 2
+      },
+      {
+       "key": "4",
+       "total_onus": 2
+      }
+     ],
+     "zones": [
+      {
+       "key": "Zona Demo Centro",
+       "total_onus": 4
+      },
+      {
+       "key": "Zona Demo Norte",
+       "total_onus": 5
+      },
+      {
+       "key": "Zona Demo Sur",
+       "total_onus": 5
+      }
+     ],
+     "vlans": [
+      {
+       "key": "100",
+       "total_onus": 11
+      },
+      {
+       "key": "200",
+       "total_onus": 3
+      }
+     ],
+     "pon_type": [
+      {
+       "key": "gpon",
+       "total_onus": 14
+      }
+     ],
+     "onu_types": [
+      {
+       "key": "HG8310M",
+       "total_onus": 3
+      },
+      {
+       "key": "ZTE-F601",
+       "total_onus": 7
+      },
+      {
+       "key": "ZTE-F660",
+       "total_onus": 4
+      }
+     ],
+     "total_onus": 14
+    }
+   },
+   "cache": {
+    "hit": false,
+    "stale": false,
+    "ts": 1790000000000
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/no-configuradas/",
+  "json": {
+   "success": true,
+   "data": [
+    {
+     "pon_type": "gpon",
+     "board": 2,
+     "port": 5,
+     "pon_description": "PON 2/5 DEMO",
+     "sn": "ZTEGDEMO0099",
+     "onu_type_name": "ZTE-F601",
+     "olt_id": "1",
+     "actions": [
+      "authorize"
+     ]
+    },
+    {
+     "pon_type": "gpon",
+     "board": 3,
+     "port": 3,
+     "pon_description": "PON 3/3 DEMO",
+     "sn": "ZTEGDEMO0098",
+     "onu_type_name": "HG8310M",
+     "olt_id": "1",
+     "actions": [
+      "authorize"
+     ]
+    },
+    {
+     "pon_type": "gpon",
+     "board": 4,
+     "port": 2,
+     "pon_description": "",
+     "sn": "ZTEGDEMO0097",
+     "onu_type_name": "ZTE-F660",
+     "olt_id": "1",
+     "actions": [
+      "view"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "url": "/smart-olt/onus-no-configuradas/",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "pon_type": "gpon",
+      "board": 2,
+      "port": 5,
+      "pon_description": "PON 2/5 DEMO",
+      "sn": "ZTEGDEMO0099",
+      "onu_type_name": "ZTE-F601",
+      "olt_id": "1",
+      "actions": [
+       "authorize"
+      ]
+     },
+     {
+      "pon_type": "gpon",
+      "board": 3,
+      "port": 3,
+      "pon_description": "PON 3/3 DEMO",
+      "sn": "ZTEGDEMO0098",
+      "onu_type_name": "HG8310M",
+      "olt_id": "1",
+      "actions": [
+       "authorize"
+      ]
+     },
+     {
+      "pon_type": "gpon",
+      "board": 4,
+      "port": 2,
+      "pon_description": "",
+      "sn": "ZTEGDEMO0097",
+      "onu_type_name": "ZTE-F660",
+      "olt_id": "1",
+      "actions": [
+       "view"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/all-onus-no-configuradas",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "pon_type": "gpon",
+      "board": 2,
+      "port": 5,
+      "pon_description": "PON 2/5 DEMO",
+      "sn": "ZTEGDEMO0099",
+      "onu_type_name": "ZTE-F601",
+      "olt_id": "1",
+      "actions": [
+       "authorize"
+      ]
+     },
+     {
+      "pon_type": "gpon",
+      "board": 3,
+      "port": 3,
+      "pon_description": "PON 3/3 DEMO",
+      "sn": "ZTEGDEMO0098",
+      "onu_type_name": "HG8310M",
+      "olt_id": "1",
+      "actions": [
+       "authorize"
+      ]
+     },
+     {
+      "pon_type": "gpon",
+      "board": 4,
+      "port": 2,
+      "pon_description": "",
+      "sn": "ZTEGDEMO0097",
+      "onu_type_name": "ZTE-F660",
+      "olt_id": "1",
+      "actions": [
+       "view"
+      ]
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/detalle-onu/",
+  "json": {
+   "message": "demo",
+   "data": {
+    "onu_details": {
+     "olt_name": "OLT DEMO NORTE",
+     "board": 2,
+     "port": 3,
+     "sn": "ZTEGDEMO0006",
+     "unique_external_id": "ZTEGDEMO0006",
+     "onu_type_name": "HG8310M",
+     "pon_type": "gpon",
+     "name": "CLIENTE DEMO ECO",
+     "zone_name": "Zona Demo Sur",
+     "address": "Calle Demo 45",
+     "mode": "Bridging",
+     "status": "Online",
+     "signal": "Critical"
+    }
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/vlans/",
+  "json": {
+   "success": true,
+   "data": [
+    {
+     "vlan": 100,
+     "description": "Clientes residenciales",
+     "dhcp_snooping": false,
+     "iptv": false,
+     "mgmt_voip": false,
+     "lan_to_lan": false
+    },
+    {
+     "vlan": 200,
+     "description": "Clientes empresas",
+     "dhcp_snooping": false,
+     "iptv": false,
+     "mgmt_voip": false,
+     "lan_to_lan": false
+    },
+    {
+     "vlan": 300,
+     "description": "IPTV",
+     "dhcp_snooping": false,
+     "iptv": true,
+     "mgmt_voip": false,
+     "lan_to_lan": false
+    },
+    {
+     "vlan": 900,
+     "description": "Gestión",
+     "dhcp_snooping": false,
+     "iptv": false,
+     "mgmt_voip": true,
+     "lan_to_lan": false
+    }
+   ]
+  }
+ },
+ {
+  "url": "/smart-olt/zonas",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "name": "Zona Demo Centro"
+     },
+     {
+      "name": "Zona Demo Sur"
+     },
+     {
+      "name": "Zona Demo Norte"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/perfiles-velocidad",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "name": "10M",
+      "speed": "10000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "10M",
+      "speed": "10000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "30M",
+      "speed": "30000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "30M",
+      "speed": "30000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "60M",
+      "speed": "60000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "60M",
+      "speed": "60000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "100M",
+      "speed": "100000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "100M",
+      "speed": "100000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "300M",
+      "speed": "300000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "300M",
+      "speed": "300000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "500M",
+      "speed": "500000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "500M",
+      "speed": "500000",
+      "direction": "upload",
+      "type": "Internet"
+     },
+     {
+      "name": "1G",
+      "speed": "1000000",
+      "direction": "download",
+      "type": "Internet"
+     },
+     {
+      "name": "1G",
+      "speed": "1000000",
+      "direction": "upload",
+      "type": "Internet"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/smart-olt/pon-tipos/",
+  "json": {
+   "success": true,
+   "data": {
+    "status": true,
+    "response": [
+     {
+      "name": "ZTE-F601"
+     },
+     {
+      "name": "ZTE-F660"
+     },
+     {
+      "name": "HG8310M"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "url": "/admin-olt",
+  "exact": true,
+  "method": "GET",
+  "json": [
+   {
+    "id": "00000000-0000-4000-a000-000000000002",
+    "subdominio": "demo",
+    "api": "DEMO-API-KEY",
+    "activarOnu": true
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/olt/listado",
+  "json": [
+   {
+    "id": 1,
+    "name": "OLT DEMO NORTE",
+    "host": "192.0.2.1",
+    "hardware_version": {
+     "model": "C320",
+     "brand": "ZTE"
+    },
+    "software_version": {
+     "version": "V2.1.0"
+    }
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/onus-autorizadas",
+  "json": [
+   {
+    "id": 5000,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO ALFA",
+    "sn": "ZTEGDEMO0001",
+    "model": "ZTE-F601",
+    "board": 2,
+    "port": 1,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Norte",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5001,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO BRAVO",
+    "sn": "ZTEGDEMO0002",
+    "model": "ZTE-F601",
+    "board": 2,
+    "port": 1,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Norte",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5002,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO CHARLIE",
+    "sn": "ZTEGDEMO0003",
+    "model": "ZTE-F660",
+    "board": 2,
+    "port": 2,
+    "status": "Online",
+    "signal_level": "Warning",
+    "zone": "Zona Demo Norte",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5003,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "SUCURSAL DEMO ESTE",
+    "sn": "ZTEGDEMO0004",
+    "model": "ZTE-F660",
+    "board": 2,
+    "port": 2,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Centro",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5004,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO DELTA",
+    "sn": "ZTEGDEMO0005",
+    "model": "ZTE-F601",
+    "board": 2,
+    "port": 3,
+    "status": "Offline",
+    "signal_level": "Disable",
+    "zone": "Zona Demo Centro",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5005,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO ECO",
+    "sn": "ZTEGDEMO0006",
+    "model": "HG8310M",
+    "board": 2,
+    "port": 3,
+    "status": "Online",
+    "signal_level": "Critical",
+    "zone": "Zona Demo Sur",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5006,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO FOXTROT",
+    "sn": "ZTEGDEMO0007",
+    "model": "HG8310M",
+    "board": 3,
+    "port": 1,
+    "status": "Power Fail",
+    "signal_level": "Warning",
+    "zone": "Zona Demo Sur",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5007,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "OFICINA DEMO GOLF",
+    "sn": "ZTEGDEMO0008",
+    "model": "ZTE-F660",
+    "board": 3,
+    "port": 1,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Centro",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5008,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO HOTEL",
+    "sn": "ZTEGDEMO0009",
+    "model": "ZTE-F601",
+    "board": 3,
+    "port": 2,
+    "status": "Offline",
+    "signal_level": "Disable",
+    "zone": "Zona Demo Sur",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5009,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO INDIA",
+    "sn": "ZTEGDEMO0010",
+    "model": "ZTE-F601",
+    "board": 3,
+    "port": 2,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Norte",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5010,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO JULIET",
+    "sn": "ZTEGDEMO0011",
+    "model": "ZTE-F601",
+    "board": 3,
+    "port": 4,
+    "status": "Online",
+    "signal_level": "Stable",
+    "zone": "Zona Demo Norte",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   },
+   {
+    "id": 5011,
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "name": "CLIENTE DEMO KILO",
+    "sn": "ZTEGDEMO0012",
+    "model": "ZTE-F660",
+    "board": 3,
+    "port": 4,
+    "status": "Offline",
+    "signal_level": "Disable",
+    "zone": "Zona Demo Sur",
+    "created_at": "2026-09-15T14:00:00.000Z"
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/onus-no-autorizadas",
+  "json": [
+   {
+    "pon_type": "gpon",
+    "board": 2,
+    "port": 5,
+    "pon_description": "PON 2/5 DEMO",
+    "sn": "ZTEGDEMO0099",
+    "onu_type_name": "ZTE-F601",
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "interface_id": 7
+   },
+   {
+    "pon_type": "gpon",
+    "board": 3,
+    "port": 3,
+    "pon_description": "",
+    "sn": "ZTEGDEMO0098",
+    "onu_type_name": "HG8310M",
+    "olt_id": 1,
+    "olt_name": "OLT DEMO NORTE",
+    "interface_id": 11
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/tipos-onu",
+  "json": [
+   {
+    "id": 36,
+    "name": "ZTE-F601"
+   },
+   {
+    "id": 37,
+    "name": "ZTE-F660"
+   },
+   {
+    "id": 38,
+    "name": "HG8310M"
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/zonas",
+  "json": [
+   {
+    "id": 1,
+    "name": "Zona Demo Centro"
+   },
+   {
+    "id": 2,
+    "name": "Zona Demo Norte"
+   },
+   {
+    "id": 3,
+    "name": "Zona Demo Sur"
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/perfiles-velocidad/descarga",
+  "json": [
+   {
+    "id": 1,
+    "name": "10M",
+    "rate": "10 Mbps"
+   },
+   {
+    "id": 2,
+    "name": "30M",
+    "rate": "30 Mbps"
+   },
+   {
+    "id": 3,
+    "name": "60M",
+    "rate": "60 Mbps"
+   },
+   {
+    "id": 4,
+    "name": "100M",
+    "rate": "100 Mbps"
+   },
+   {
+    "id": 5,
+    "name": "300M",
+    "rate": "300 Mbps"
+   },
+   {
+    "id": 6,
+    "name": "1G",
+    "rate": "1 Gbps"
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/perfiles-velocidad/subida",
+  "json": [
+   {
+    "id": 21,
+    "name": "10M",
+    "rate": "10 Mbps"
+   },
+   {
+    "id": 22,
+    "name": "30M",
+    "rate": "30 Mbps"
+   },
+   {
+    "id": 23,
+    "name": "60M",
+    "rate": "60 Mbps"
+   },
+   {
+    "id": 24,
+    "name": "100M",
+    "rate": "100 Mbps"
+   },
+   {
+    "id": 25,
+    "name": "300M",
+    "rate": "300 Mbps"
+   },
+   {
+    "id": 26,
+    "name": "1G",
+    "rate": "1 Gbps"
+   }
+  ]
+ },
+ {
+  "url": "/admin-olt/naps",
+  "json": [
+   {
+    "id": 1,
+    "odb_splitter": "NAP-DEMO-01"
+   },
+   {
+    "id": 2,
+    "odb_splitter": "NAP-DEMO-02"
+   }
+  ]
+ },
+ {
+  "url": "obtenerVinculados=si",
+  "json": {
+   "data": [
+    {
+     "id": "00000000-0000-4000-8000-000000000100",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000100",
+         "sn": "ZTEGDEMO0001",
+         "ipv4": "192.0.2.40"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000101",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000101",
+         "sn": "ZTEGDEMO0002",
+         "ipv4": "192.0.2.41"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000102",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000102",
+         "sn": "ZTEGDEMO0003",
+         "ipv4": "192.0.2.42"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000103",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000103",
+         "sn": "ZTEGDEMO0004",
+         "ipv4": "192.0.2.43"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000104",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000104",
+         "sn": "ZTEGDEMO0005",
+         "ipv4": "192.0.2.44"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000106",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000106",
+         "sn": "ZTEGDEMO0007",
+         "ipv4": "192.0.2.46"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000107",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000107",
+         "sn": "ZTEGDEMO0008",
+         "ipv4": "192.0.2.47"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-4000-8000-000000000110",
+     "facturaCliente": [
+      {
+       "servicio_id": [
+        {
+         "id": "00000000-0000-4000-9000-000000000110",
+         "sn": "ZTEGDEMO0011",
+         "ipv4": "192.0.2.50"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "total": 8
+  }
+ }
+]

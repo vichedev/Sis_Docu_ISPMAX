@@ -1,0 +1,201 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════
+   Manual ISPMAX — único CSS propio del sitio (Tailwind CSS v4, CSS-first).
+   Todo el aspecto se escribe con utilidades en theme/ y src/components/. Aquí solo van:
+     1. capas e importación de Tailwind. Su preflight va en la capa `base`, que va DESPUÉS de la capa `rp-base` donde
+        Rspress carga el suyo: el de v4 lo completa y no pisa el CSS de los componentes de Rspress que siguen en uso
+        (va sin capa y gana siempre a las capas);
+     2. dónde buscar clases (@source);
+     3. tokens (@theme) y los valores de cada modo (claro/oscuro) en la capa base;
+     4. unas pocas reglas globales que no se pueden expresar por elemento (foco, movimiento reducido, impresión);
+     5. el puente con las variables `--rp-*` del tema de Rspress (barra de progreso, bloques de código, scroll-padding).
+   Ver docs-theme-notes.md.
+   ═══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Clases: el tema y los componentes MDX. Las páginas .mdx se detectan solas desde la carpeta docs/ activa
+   (`base` del plugin de PostCSS en rspress.config.ts; con el corpus, la de portal/work-test/manual-dev/). */
+@source "../theme";
+@source "../src";
+
+/* Modo oscuro por clase: Rspress pone `dark` en <html> antes de pintar (script en línea), sin parpadeo. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-display: "Sora Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Marca (violeta ISPMAX) y acento (cian). brand-600 es el violeta de la marca (#5b4bd8). */
+  --color-brand-50: #f3f1ff;
+  --color-brand-100: #e9e5ff;
+  --color-brand-200: #d4cdfe;
+  --color-brand-300: #b3a8fd;
+  --color-brand-400: #8b7dfb;
+  --color-brand-500: #7464f0;
+  --color-brand-600: #5b4bd8;
+  --color-brand-700: #4a3ac4;
+  --color-brand-800: #3a2ca6;
+  --color-brand-900: #2f2585;
+  --color-brand-950: #1c1550;
+  --color-accent-300: #7dd3fc;
+  --color-accent-400: #38bdf8;
+  --color-accent-500: #0ea5e9;
+  /* Colores del logotipo (naranja, amarillo, azul petróleo): solo decoración. */
+  --color-logo-orange: #f26b1d;
+  --color-logo-yellow: #f7c21b;
+  --color-logo-petrol: #1f4e63;
+
+  /* Medidas fijas del armazón: h-topbar, top-topbar, w-sidebar, w-toc, max-w-doc, max-w-shell. */
+  --spacing-topbar: 4rem;
+  --spacing-subbar: 2.75rem;
+  --spacing-sidebar: 17.5rem;
+  --spacing-toc: 15rem;
+  --container-doc: 46rem;
+  --container-shell: 92rem;
+
+  --animate-fade-in: fade-in 0.16s ease-out;
+  --animate-rise: rise 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slide-in: slide-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  }
+  @keyframes slide-in {
+    from { transform: translateX(-100%); }
+  }
+}
+
+/* Tokens semánticos: cambian con el modo. Uso: bg-bg, bg-surface, text-fg, text-fg-muted, border-line… */
+@theme inline {
+  --color-bg: var(--isp-bg);
+  --color-bg-soft: var(--isp-bg-soft);
+  --color-bg-mute: var(--isp-bg-mute);
+  --color-surface: var(--isp-surface);
+  --color-fg: var(--isp-fg);
+  --color-fg-muted: var(--isp-fg-muted);
+  --color-fg-subtle: var(--isp-fg-subtle);
+  --color-fg-faint: var(--isp-fg-faint);
+  --color-line: var(--isp-line);
+  --color-line-soft: var(--isp-line-soft);
+  --color-brand: var(--isp-brand);
+  --color-brand-strong: var(--isp-brand-strong);
+  --color-brand-tint: var(--isp-brand-tint);
+  --color-ring: var(--isp-ring);
+  --color-figure: var(--isp-figure);
+}
+
+@layer base {
+  /* Contraste (WCAG AA) comprobado: fg-muted y fg-subtle ≥ 4.5:1 sobre bg y bg-soft en los dos modos;
+     fg-faint solo para iconos y filetes, nunca para texto. */
+  :root {
+    color-scheme: light;
+    --isp-bg: #ffffff;
+    --isp-bg-soft: #f6f6fb;
+    --isp-bg-mute: #ececf4;
+    --isp-surface: #ffffff;
+    --isp-fg: #141726;
+    --isp-fg-muted: #424959;
+    --isp-fg-subtle: #5d6577;
+    --isp-fg-faint: #a0a6b4;
+    --isp-line: #e3e4ee;
+    --isp-line-soft: #efeff6;
+    --isp-brand: #5b4bd8;
+    --isp-brand-strong: #4a3ac4;
+    --isp-brand-tint: rgb(91 75 216 / 0.08);
+    --isp-ring: rgb(91 75 216 / 0.55);
+    --isp-figure: #f3f4f9;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+    --isp-bg: #0b0c14;
+    --isp-bg-soft: #10121c;
+    --isp-bg-mute: #191c29;
+    --isp-surface: #121421;
+    --isp-fg: #eceef6;
+    --isp-fg-muted: #b8bece;
+    --isp-fg-subtle: #9098ab;
+    --isp-fg-faint: #4f5668;
+    --isp-line: #252839;
+    --isp-line-soft: #1a1d2b;
+    --isp-brand: #a093fd;
+    --isp-brand-strong: #bab1fe;
+    --isp-brand-tint: rgb(139 125 251 / 0.14);
+    --isp-ring: rgb(160 147 253 / 0.6);
+    --isp-figure: #0e1019;
+  }
+
+  /* Al imprimir siempre en claro (texto oscuro sobre papel), aunque la pantalla esté en oscuro. */
+  @media print {
+    :root.dark {
+      color-scheme: light;
+      --isp-bg: #ffffff;
+      --isp-bg-soft: #f6f6fb;
+      --isp-bg-mute: #ececf4;
+      --isp-surface: #ffffff;
+      --isp-fg: #000000;
+      --isp-fg-muted: #222222;
+      --isp-fg-subtle: #444444;
+      --isp-line: #cccccc;
+      --isp-line-soft: #dddddd;
+      --isp-brand: #4a3ac4;
+      --isp-figure: #ffffff;
+    }
+  }
+
+  /* Foco visible y coherente en todo el sitio (teclado). */
+  :focus-visible {
+    outline: 2px solid var(--isp-brand);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgb(124 109 250 / 0.22);
+  }
+
+  /* Movimiento reducido: sin animaciones ni transiciones en todo el sitio. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Puente con Rspress: sus variables se declaran fuera de capas, por eso aquí van con !important. */
+  :root {
+    --rp-c-bg: var(--isp-bg) !important;
+    --rp-c-bg-soft: var(--isp-bg-soft) !important;
+    --rp-c-bg-mute: var(--isp-bg-mute) !important;
+    --rp-c-text-1: var(--isp-fg) !important;
+    --rp-c-text-2: var(--isp-fg-muted) !important;
+    --rp-c-text-3: var(--isp-fg-subtle) !important;
+    --rp-c-divider: var(--isp-line) !important;
+    --rp-c-divider-light: var(--isp-line-soft) !important;
+    --rp-c-brand: var(--isp-brand) !important;
+    --rp-c-brand-dark: var(--isp-brand-strong) !important;
+    --rp-c-link: var(--isp-brand) !important;
+    --rp-font-family-base: var(--font-sans) !important;
+    --rp-font-family-mono: var(--font-mono) !important;
+    /* scroll-padding-top de <html> (Rspress) = barra superior (+ la barra "En esta página" bajo 1280 px):
+       los saltos a anclas no quedan tapados. */
+    --rp-nav-height: var(--spacing-topbar) !important;
+    --rp-sidebar-menu-height: 0.75rem !important;
+  }
+
+  @media (width < 80rem) {
+    :root {
+      --rp-sidebar-menu-height: calc(var(--spacing-subbar) + 0.75rem) !important;
+    }
+  }
+}

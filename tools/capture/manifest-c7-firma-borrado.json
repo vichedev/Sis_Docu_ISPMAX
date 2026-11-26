@@ -1,0 +1,518 @@
+[
+ {
+  "id": "ajustes/firma/01-sin-configurar",
+  "route": "/ajustes/firma-electronica",
+  "waitFor": ".q-tab",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/catalogo",
+    "json": [
+     {
+      "id": "datil",
+      "name": "Dátil",
+      "credentials": [
+       {
+        "key": "apiKey"
+       },
+       {
+        "key": "tenantUrl"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "url": "/firma-electronica/config",
+    "json": []
+   },
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": false,
+     "niveles": [],
+     "motivo": "No hay ningún proveedor de firma electrónica configurado."
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 400
+  }
+ },
+ {
+  "id": "ajustes/firma/02-credenciales-verificadas",
+  "route": "/ajustes/firma-electronica",
+  "waitFor": ".q-tab",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/catalogo",
+    "json": [
+     {
+      "id": "datil",
+      "name": "Dátil",
+      "credentials": [
+       {
+        "key": "apiKey"
+       },
+       {
+        "key": "tenantUrl"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "url": "/firma-electronica/config",
+    "json": [
+     {
+      "providerId": "datil",
+      "profile": "default",
+      "isDefault": true,
+      "lastVerifiedOk": true,
+      "lastVerificationMessage": "Credenciales válidas",
+      "enabledLevels": [
+       "simple"
+      ],
+      "settings": {
+       "maxRetries": 3
+      }
+     }
+    ]
+   },
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": true,
+     "niveles": [
+      "simple"
+     ],
+     "motivo": null
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 580
+  }
+ },
+ {
+  "id": "clientes/firma/01-contratos-con-seleccion",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": true,
+     "niveles": [
+      "simple"
+     ],
+     "motivo": null
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(1) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(2) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "hover": {
+     "css": ".q-table tbody tr:nth-child(5) .q-btn.bg-orange"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 612
+  }
+ },
+ {
+  "id": "clientes/firma/02-dialogo-antes-de-enviar",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": true,
+     "niveles": [
+      "simple"
+     ],
+     "motivo": null
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(1) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(2) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "Enviar a firmar (2)",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/firma/03-no-se-puede-enviar",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": true,
+     "niveles": [
+      "simple"
+     ],
+     "motivo": null
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(3) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(4) .q-checkbox"
+    },
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "Enviar a firmar (2)",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/firma/04-tramite-esperando-firma",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/firma-electronica/disponibilidad",
+    "json": {
+     "habilitado": true,
+     "niveles": [
+      "simple"
+     ],
+     "motivo": null
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(5) .q-btn.bg-orange"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "inicio/guia/01-pantalla-principal",
+  "route": "/",
+  "waitFor": ".q-header",
+  "settle": 7000,
+  "width": 1900,
+  "height": 1000,
+  "clip": {
+   "x": 0,
+   "y": 0,
+   "width": 1900,
+   "height": 590
+  }
+ },
+ {
+  "id": "ajustes/sistema/01-actualizacion-del-sistema",
+  "route": "/ajustes/sistema",
+  "waitFor": ".q-card",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 230
+  }
+ },
+ {
+  "id": "clientes/borrado/01-clientes-del-router-antes",
+  "route": "/clientes",
+  "waitFor": ".ag-row",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "ROUTER BORRADO DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 500
+  }
+ },
+ {
+  "id": "ajustes/base-datos/13-borrado-aplicado",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Seleccionar tabla",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Clientes",
+     "tag": ".q-item",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Router (Todos)",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "ROUTER BORRADO DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Eliminar Datos",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Eliminar datos",
+     "tag": ".q-btn",
+     "within": ".q-dialog"
+    },
+    "wait": 1400
+   }
+  ],
+  "clip": {
+   "x": 350,
+   "y": 0,
+   "width": 1540,
+   "height": 900
+  }
+ },
+ {
+  "id": "ajustes/base-datos/14-eliminar-datos-router-y-plan",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Seleccionar tabla",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Clientes",
+     "tag": ".q-item",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Router (Todos)",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "ROUTER BORRADO DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Plan (Todos)",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "PLAN BORRADO 5 MBPS",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 350,
+   "y": 481,
+   "width": 735,
+   "height": 396
+  }
+ },
+ {
+  "id": "clientes/borrado/02-clientes-despues",
+  "route": "/clientes",
+  "waitFor": ".ag-row",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "type": {
+     "css": "input[placeholder='Buscar...']"
+    },
+    "value": "BORRADO",
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 330
+  }
+ },
+ {
+  "id": "ajustes/logs/02-borrado-masivo-de-clientes",
+  "route": "/ajustes/logs",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 400
+  }
+ }
+]

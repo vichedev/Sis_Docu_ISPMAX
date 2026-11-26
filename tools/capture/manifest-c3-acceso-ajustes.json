@@ -1,0 +1,900 @@
+[
+ {
+  "id": "acceso/usuarios/03-editar-rol-routers-sucursales",
+  "route": "/usuarios/edit/3b8d0e23-60be-4d7d-9ed1-d009e7874ef0",
+  "waitFor": ".q-select",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "annotate": [
+   {
+    "n": 1,
+    "text": "Rol:",
+    "tag": "label",
+    "exact": true,
+    "outline": false
+   },
+   {
+    "n": 2,
+    "text": "Permisos Router:",
+    "tag": "label",
+    "exact": true,
+    "outline": false
+   },
+   {
+    "n": 3,
+    "text": "Sucursal:",
+    "tag": "label",
+    "exact": true,
+    "outline": false
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 400,
+   "width": 800,
+   "height": 215
+  }
+ },
+ {
+  "id": "acceso/usuarios/04-estado-inactivo",
+  "route": "/usuarios/edit/3b8d0e23-60be-4d7d-9ed1-d009e7874ef0",
+  "waitFor": ".q-select",
+  "settle": 6000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 3
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 590,
+   "width": 800,
+   "height": 230
+  }
+ },
+ {
+  "id": "acceso/usuarios/05-horario-acceso",
+  "route": "/usuarios/edit/3b8d0e23-60be-4d7d-9ed1-d009e7874ef0",
+  "waitFor": ".q-select",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 745,
+   "width": 800,
+   "height": 270
+  }
+ },
+ {
+  "id": "acceso/usuarios/06-confirmar-eliminar",
+  "route": "/usuarios",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "type": {
+     "css": "input[type=search], .q-field input",
+     "index": 0
+    },
+    "value": "demo.soporte",
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": "tbody tr .q-btn",
+     "index": 1
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "acceso/contrasena/01-menu-mi-perfil",
+  "route": "/",
+  "waitFor": ".q-header img",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-header img",
+     "index": 0
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 1250,
+   "y": 0,
+   "width": 650,
+   "height": 200
+  }
+ },
+ {
+  "id": "acceso/contrasena/02-nueva-contrasena",
+  "route": "/usuarios/edit/3b8d0e23-60be-4d7d-9ed1-d009e7874ef0",
+  "waitFor": ".q-select",
+  "settle": 6000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 960,
+   "width": 800,
+   "height": 220
+  }
+ },
+ {
+  "id": "ajustes/base-datos/03-cambios-masivos-relleno",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Filtrar por Router",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Día de pago",
+     "tag": ".q-field",
+     "exact": false
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "5",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 12
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Correo",
+     "tag": ".q-item"
+    },
+    "wait": 1500
+   },
+   {
+    "key": "Escape",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 88,
+   "width": 1520,
+   "height": 850
+  }
+ },
+ {
+  "id": "ajustes/base-datos/04-cambios-masivos-confirmar",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Día de pago",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "5",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Aplicar cambios",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "ajustes/base-datos/05-ubicaciones",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Ubicaciones",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 88,
+   "width": 1520,
+   "height": 735
+  }
+ },
+ {
+  "id": "ajustes/base-datos/06-campo-nuevo-selector",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "type": {
+     "css": "input",
+     "index": 0
+    },
+    "value": "zona_cobertura",
+    "wait": 500
+   },
+   {
+    "click": {
+     "text": "Tipo de campo",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Selector (opciones)",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   },
+   {
+    "type": {
+     "css": "input[placeholder=\"Nueva opción\"], input",
+     "index": 2
+    },
+    "value": "Norte",
+    "wait": 300
+   },
+   {
+    "key": "Enter",
+    "wait": 500
+   },
+   {
+    "key": "Enter",
+    "wait": 100
+   },
+   {
+    "type": {
+     "css": "input",
+     "index": 2
+    },
+    "value": "Sur",
+    "wait": 300
+   },
+   {
+    "key": "Enter",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 88,
+   "width": 1520,
+   "height": 462
+  }
+ },
+ {
+  "id": "ajustes/base-datos/07-campo-editar",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "edit",
+     "tag": ".q-btn",
+     "exact": true
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 100,
+   "width": 1520,
+   "height": 392
+  }
+ },
+ {
+  "id": "ajustes/base-datos/08-ubicaciones-seleccion",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Ubicaciones",
+     "tag": ".q-tab"
+    },
+    "wait": 2000
+   },
+   {
+    "type": {
+     "css": "input[placeholder^=\"Ej\"]",
+     "index": 3
+    },
+    "value": "Recinto",
+    "wait": 600
+   },
+   {
+    "click": {
+     "text": "AZUAY",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "CUENCA",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "BELLAVISTA",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 88,
+   "width": 1520,
+   "height": 735
+  }
+ },
+ {
+  "id": "ajustes/base-datos/09-eliminar-datos-filtros",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Seleccionar tabla",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Clientes",
+     "tag": ".q-item",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Router (Todos)",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 350,
+   "y": 481,
+   "width": 735,
+   "height": 396
+  }
+ },
+ {
+  "id": "ajustes/base-datos/10-eliminar-datos-confirmar-filtros",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Seleccionar tabla",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Clientes",
+     "tag": ".q-item",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Router (Todos)",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "tag": ".q-item"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Eliminar Datos",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "ajustes/base-datos/11-eliminar-datos-confirmar-todos",
+  "route": "/ajustes/base-datos",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Seleccionar tabla",
+     "tag": ".q-field"
+    },
+    "wait": 1000
+   },
+   {
+    "click": {
+     "text": "Clientes",
+     "tag": ".q-item",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Eliminar Datos",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "finanzas/ingresos-egresos/03-formulario-egreso",
+  "route": "/ingresos-egresos",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Nuevo registro",
+     "tag": ".q-btn"
+    },
+    "wait": 1800
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-field",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Egreso",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": ".q-dialog input[type=number]"
+    },
+    "value": "85",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-field",
+     "index": 4
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "DEMO DISTRIBUIDORA",
+     "tag": ".q-item"
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-field",
+     "index": 6
+    },
+    "value": "REF-DEMO-010",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-field",
+     "index": 7
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Transferencia",
+     "tag": ".q-item",
+     "exact": true
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "finanzas/ingresos-egresos/04-reporte",
+  "route": "/ingresos-egresos",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Reporte",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "soporte/tickets/03-cambiar-estado-menu",
+  "route": "/tickets/edit/850c00af-342a-467b-92d4-9dc010bc2f23",
+  "waitFor": ".q-tab",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown__arrow-container"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 350,
+   "y": 100,
+   "width": 1490,
+   "height": 545
+  }
+ },
+ {
+  "id": "soporte/tickets/04-confirmar-estado",
+  "route": "/tickets/edit/850c00af-342a-467b-92d4-9dc010bc2f23",
+  "waitFor": ".q-tab",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown__arrow-container"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "EN PROCESO",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "soporte/reportes/01-tickets-productividad",
+  "route": "/tickets/reportes",
+  "waitFor": ".q-tab",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 500
+  }
+ },
+ {
+  "id": "soporte/reportes/02-tickets-por-cliente",
+  "route": "/tickets/reportes",
+  "waitFor": ".q-tab",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Por Cliente",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 755
+  }
+ },
+ {
+  "id": "soporte/reportes/03-instalaciones",
+  "route": "/instalaciones/reportes",
+  "waitFor": ".q-page",
+  "settle": 5000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 1030
+  }
+ },
+ {
+  "id": "soporte/tickets/05-listado-tickets",
+  "route": "/tickets",
+  "waitFor": ".q-table",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 570
+  }
+ },
+ {
+  "id": "ajustes/licencia/01-circulo",
+  "route": "/ajustes",
+  "waitFor": ".q-avatar",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/customers/licencia-suscripcion",
+    "json": {
+     "vinculado": true,
+     "plan": "Plan Demo",
+     "activo": true,
+     "usados": 13,
+     "limite": 100,
+     "resumen": {
+      "fechaPago": "2026-11-05",
+      "fechaCreacionFactura": "2026-10-31",
+      "fechaCorte": "2026-11-10",
+      "deuda": {
+       "cantidad": 0,
+       "totalConIva": "0.00"
+      }
+     }
+    }
+   },
+   {
+    "url": "/customers/facturas-suscripcion",
+    "json": {
+     "data": [
+      {
+       "no_factura": "001-001-000000123",
+       "vencimiento": "2026-10-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      },
+      {
+       "no_factura": "001-001-000000098",
+       "vencimiento": "2026-09-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      },
+      {
+       "no_factura": "001-001-000000074",
+       "vencimiento": "2026-08-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      }
+     ]
+    }
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 400
+  }
+ },
+ {
+  "id": "ajustes/licencia/02-dialogo",
+  "route": "/ajustes",
+  "waitFor": ".q-avatar",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "mock": [
+   {
+    "url": "/customers/licencia-suscripcion",
+    "json": {
+     "vinculado": true,
+     "plan": "Plan Demo",
+     "activo": true,
+     "usados": 13,
+     "limite": 100,
+     "resumen": {
+      "fechaPago": "2026-11-05",
+      "fechaCreacionFactura": "2026-10-31",
+      "fechaCorte": "2026-11-10",
+      "deuda": {
+       "cantidad": 0,
+       "totalConIva": "0.00"
+      }
+     }
+    }
+   },
+   {
+    "url": "/customers/facturas-suscripcion",
+    "json": {
+     "data": [
+      {
+       "no_factura": "001-001-000000123",
+       "vencimiento": "2026-10-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      },
+      {
+       "no_factura": "001-001-000000098",
+       "vencimiento": "2026-09-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      },
+      {
+       "no_factura": "001-001-000000074",
+       "vencimiento": "2026-08-05",
+       "total": "69.00",
+       "estado": "PAGADO",
+       "clave_acceso": "0101202601999999999900110010010000001231234567810"
+      }
+     ]
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Licencia",
+     "tag": ".q-avatar"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ }
+]

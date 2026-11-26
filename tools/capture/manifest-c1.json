@@ -1,0 +1,397 @@
+[
+ {
+  "id": "ajustes/cortes/02-panel",
+  "route": "/ajustes/servicio",
+  "settle": 3000,
+  "clip": {
+   "x": 412,
+   "y": 84,
+   "width": 900,
+   "height": 770
+  }
+ },
+ {
+  "id": "clientes/cortes/01-listado-filtros",
+  "route": "/clientes",
+  "settle": 3500,
+  "clip": {
+   "x": 306,
+   "y": 84,
+   "width": 1110,
+   "height": 420
+  }
+ },
+ {
+  "id": "clientes/cortes/02-facturas",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "settle": 4000,
+  "height": 1100,
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "css": ".q-card",
+   "index": 2,
+   "pad": 8
+  },
+  "width": 1920
+ },
+ {
+  "id": "clientes/cortes/03-configuracion",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "settle": 4000,
+  "height": 1400,
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Configuración",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-card",
+   "index": 2,
+   "pad": 8
+  },
+  "width": 1920
+ },
+ {
+  "id": "clientes/cortes/04-recordatorios-tercero",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "settle": 4000,
+  "height": 1650,
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Configuración",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-toggle",
+     "index": 1
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 366,
+   "y": 668,
+   "width": 1470,
+   "height": 768
+  },
+  "width": 1920
+ },
+ {
+  "id": "red/routers/03-formulario-alta",
+  "route": "/router/add",
+  "settle": 3000,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/routers/04-datos-configuracion",
+  "route": "/router/edit/611d20e1-7c22-4bb9-b376-b96576295e3b",
+  "settle": 3500,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/planes/03-facturacion",
+  "route": "/servicios/internert/edit/8119633b-3e3f-4915-99dd-d08b4793af94",
+  "settle": 3000,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/planes/04-parametros-tecnicos",
+  "route": "/servicios/internert/edit/8119633b-3e3f-4915-99dd-d08b4793af94",
+  "settle": 3000,
+  "steps": [
+   {
+    "click": {
+     "text": "Parámetros Técnicos"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/redes-ipv6/01-listado",
+  "route": "/redes-ipv6",
+  "settle": 3000,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/redes-ipv6/02-formulario",
+  "route": "/redes-ipv6/add",
+  "settle": 3000,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "ajustes/panel/02-accesos",
+  "route": "/ajustes",
+  "settle": 2500,
+  "width": 1920,
+  "height": 1080,
+  "clip": {
+   "x": 322,
+   "y": 104,
+   "width": 1500,
+   "height": 392
+  }
+ },
+ {
+  "id": "ajustes/facturacion/03-pantalla",
+  "route": "/ajustes/facturacion",
+  "settle": 3000,
+  "height": 1500,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/personalizado/01-listado",
+  "route": "/personalizado",
+  "settle": 3000,
+  "width": 1920,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "red/personalizado/02-formulario",
+  "route": "/personalizado",
+  "settle": 3000,
+  "width": 1920,
+  "steps": [
+   {
+    "click": {
+     "text": "Nuevo"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "index": 0,
+   "pad": 0
+  }
+ },
+ {
+  "id": "ajustes/base-datos/01-campos-personalizados",
+  "route": "/ajustes/base-datos",
+  "settle": 3000,
+  "width": 1920,
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1542,
+   "height": 665
+  }
+ },
+ {
+  "id": "ajustes/base-datos/02-cambios-masivos",
+  "route": "/ajustes/base-datos",
+  "settle": 3000,
+  "width": 1920,
+  "steps": [
+   {
+    "click": {
+     "text": "Cambios masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1542,
+   "height": 680
+  }
+ },
+ {
+  "id": "red/monitoreo/01-listado",
+  "route": "/monitoreo-red",
+  "settle": 3500,
+  "width": 1920,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "ajustes/olts/01-smartolt",
+  "route": "/ajustes/smartolt",
+  "settle": 3000,
+  "width": 1920,
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1542,
+   "height": 830
+  }
+ },
+ {
+  "id": "ajustes/logs/01-historial",
+  "route": "/ajustes/logs",
+  "settle": 3500,
+  "width": 1920,
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1542,
+   "height": 800
+  }
+ },
+ {
+  "id": "ajustes/plantillas/02-recordatorio-de-pago",
+  "route": "/ajustes/plantillas",
+  "settle": 3500,
+  "width": 1920,
+  "clip": {
+   "x": 298,
+   "y": 76,
+   "width": 1606,
+   "height": 860
+  }
+ },
+ {
+  "id": "ajustes/mensajeria/02-configuracion",
+  "route": "/ajustes/mensajeria",
+  "settle": 3500,
+  "width": 1920,
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1545,
+   "height": 580
+  }
+ },
+ {
+  "id": "ajustes/mensajeria/03-mensajes-masivos",
+  "route": "/ajustes/mensajeria",
+  "settle": 3500,
+  "width": 1920,
+  "height": 1100,
+  "steps": [
+   {
+    "click": {
+     "text": "Mensajes masivos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 330,
+   "y": 84,
+   "width": 1545,
+   "height": 760
+  }
+ },
+ {
+  "id": "ajustes/personal/01-listado",
+  "route": "/usuarios",
+  "settle": 3500,
+  "width": 1920,
+  "height": 1100,
+  "clip": {
+   "x": 306,
+   "y": 88,
+   "width": 1590,
+   "height": 616
+  }
+ },
+ {
+  "id": "ajustes/personal/02-edicion",
+  "route": "/usuarios/edit/36693063-1a09-43ec-8311-a6a3e23c5b56",
+  "settle": 4000,
+  "width": 1920,
+  "height": 1300,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "finanzas/personas/01-listado",
+  "route": "/personas",
+  "settle": 3500,
+  "width": 1920,
+  "clip": {
+   "css": ".q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "finanzas/personas/02-formulario",
+  "route": "/personas",
+  "settle": 3000,
+  "width": 1920,
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar persona"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "index": 0,
+   "pad": 0
+  }
+ }
+]

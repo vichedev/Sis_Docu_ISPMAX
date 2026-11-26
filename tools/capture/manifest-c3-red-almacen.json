@@ -1,0 +1,631 @@
+[
+ {
+  "id": "almacen/categorias/02-formulario",
+  "route": "/categories",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar Categoría",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Accesorio",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input"
+    },
+    "value": "PATCHCORD SC/UPC",
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Unidades",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "type": {
+     "css": ".q-dialog textarea"
+    },
+    "value": "DEMO-PATCH",
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .text-h6"
+    },
+    "wait": 300
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/categorias/03-confirmar-eliminar",
+  "route": "/categories",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "delete",
+     "tag": "button"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/equipos/03-formulario",
+  "route": "/equipos",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "Agregar Equipo",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Matriz",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "ONU GPON",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 2
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "DEMO DISTRIBUIDORA",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input",
+     "index": 0
+    },
+    "value": "DEMO-SN-0100",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input",
+     "index": 1
+    },
+    "value": "00:00:5E:00:53:64",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input",
+     "index": 2
+    },
+    "value": "28",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 3
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "15%",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "click": {
+     "css": ".q-dialog .text-h6"
+    },
+    "wait": 300
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/equipos/04-vincular",
+  "route": "/equipos",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "link_off",
+     "tag": "button"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-select input",
+     "index": 0
+    },
+    "value": "CARLOS",
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "CARLOS ALBERTO",
+     "within": ".q-menu"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "css": ".q-dialog .text-h6"
+    },
+    "wait": 400
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "almacen/compras/01-formulario",
+  "route": "/compras/add",
+  "waitFor": ".q-page",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-field",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "DEMO DISTRIBUIDORA",
+     "within": ".q-menu"
+    },
+    "wait": 700
+   },
+   {
+    "type": {
+     "css": ".q-page .q-input input",
+     "index": 0
+    },
+    "value": "FAC-2026-0457",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 1
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "Matriz",
+     "within": ".q-menu"
+    },
+    "wait": 900
+   },
+   {
+    "type": {
+     "css": ".q-page .q-input input",
+     "index": 2
+    },
+    "value": "Compra de cable de red",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-select",
+     "index": 2
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": ".q-select input",
+     "index": 2
+    },
+    "value": "CABLE",
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "CABLE UTP",
+     "within": ".q-menu"
+    },
+    "wait": 1200
+   },
+   {
+    "type": {
+     "css": ".q-table .q-input input",
+     "index": 0
+    },
+    "value": "20",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": ".q-table .q-input input",
+     "index": 2
+    },
+    "value": "40",
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".text-h6"
+    },
+    "wait": 600
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 815
+  }
+ },
+ {
+  "id": "red/routers/05-confirmar-reparacion",
+  "route": "/router",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-table tbody .fa-gears"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/routers/06-migrar",
+  "route": "/router",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "swap_horiz",
+     "tag": "button"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/redes-ipv4/02-trasladar",
+  "route": "/redes-ipv4",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-table tbody tr:nth-child(2) button",
+     "index": 1
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "RED AMPLIACION",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Previsualizar",
+     "tag": "button"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/monitoreo/02-formulario",
+  "route": "/monitoreo-red",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "Nuevo dispositivo",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input",
+     "index": 0
+    },
+    "value": "ANTENA-TORRE-SUR",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-input input",
+     "index": 1
+    },
+    "value": "198.51.100.15",
+    "wait": 400
+   },
+   {
+    "click": {
+     "css": ".q-dialog .text-h6, .q-dialog .q-card-section"
+    },
+    "wait": 300
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/monitoreo/03-alertas",
+  "route": "/monitoreo-red",
+  "waitFor": ".q-table",
+  "settle": 2500,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "Alertas",
+     "tag": "button"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle",
+     "index": 0
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-field input",
+     "index": 0
+    },
+    "value": "soporte@ejemplo.test",
+    "wait": 300
+   },
+   {
+    "key": "Enter",
+    "wait": 400
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-field input",
+     "index": 1
+    },
+    "value": "0990000001",
+    "wait": 300
+   },
+   {
+    "key": "Enter",
+    "wait": 600
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/mapa/01-barra-edicion",
+  "route": "/mapa-nap",
+  "settle": 6000,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "edit_location_alt",
+     "tag": "button"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "css": ".barra-edicion",
+   "pad": 6
+  }
+ },
+ {
+  "id": "red/mapa/02-importar-kmz",
+  "route": "/mapa-nap",
+  "settle": 6000,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "text": "edit_location_alt",
+     "tag": "button"
+    },
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "Importar KMZ",
+     "tag": "button"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "ajustes/olts/02-reinicio-automatico",
+  "route": "/ajustes/smartolt",
+  "waitFor": ".q-page",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1600,
+  "steps": [
+   {
+    "click": {
+     "css": ".my-card .q-toggle"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".my-card .q-select"
+    },
+    "wait": 900
+   },
+   {
+    "click": {
+     "text": "7 Días",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Onus Vinculados",
+     "within": ".my-card"
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".my-card",
+   "pad": 0
+  }
+ }
+]

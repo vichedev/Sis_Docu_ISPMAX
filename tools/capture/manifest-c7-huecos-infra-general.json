@@ -1,0 +1,632 @@
+[
+ {
+  "id": "red/monitoreo/04-equipos-sin-datos",
+  "route": "/monitoreo-red",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-table",
+  "annotate": [
+   {
+    "css": ".q-table tbody tr:nth-child(3) td:nth-child(1) .q-icon",
+    "n": 1
+   },
+   {
+    "css": ".q-table tbody tr:nth-child(2) td:nth-child(7)",
+    "n": 2,
+    "outline": true
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 300,
+   "width": 1590,
+   "height": 215
+  }
+ },
+ {
+  "id": "red/monitoreo/05-alertas-sin-destinos",
+  "route": "/monitoreo-red",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "text": "Alertas",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle",
+     "index": 0
+    },
+    "wait": 1000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/monitoreo/06-prueba-con-errores",
+  "route": "/monitoreo-red",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-table",
+  "mock": [
+   {
+    "url": "/settings/",
+    "method": "PATCH",
+    "json": {}
+   },
+   {
+    "url": "/monitoreo-dispositivos/notificaciones/prueba",
+    "method": "POST",
+    "json": {
+     "configurado": true,
+     "resultados": [
+      {
+       "destino": "soporte@ejemplo.invalid",
+       "canal": "correo",
+       "ok": false,
+       "error": "El canal de correo está desactivado"
+      },
+      {
+       "destino": "593990000000",
+       "canal": "whatsapp",
+       "ok": false,
+       "error": "La empresa no tiene número de WhatsApp vinculado"
+      }
+     ],
+     "mensaje": "0 de 2 envíos correctos."
+    }
+   }
+  ],
+  "steps": [
+   {
+    "click": {
+     "text": "Alertas",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle",
+     "index": 0
+    },
+    "wait": 600
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-select input",
+     "index": 0
+    },
+    "value": "soporte@ejemplo.invalid",
+    "wait": 400
+   },
+   {
+    "key": "Enter",
+    "wait": 700
+   },
+   {
+    "type": {
+     "css": ".q-dialog .q-select input",
+     "index": 1
+    },
+    "value": "0990000000",
+    "wait": 400
+   },
+   {
+    "key": "Enter",
+    "wait": 700
+   },
+   {
+    "click": {
+     "text": "Enviar prueba",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "red/monitoreo/07-equipo-silenciado",
+  "route": "/monitoreo-red",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "hover": {
+     "text": "notifications_off",
+     "tag": "i"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 300,
+   "width": 1000,
+   "height": 150
+  }
+ },
+ {
+  "id": "red/nap/03-puertos-libres-en-el-servicio",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:first-child .q-btn",
+     "index": 1
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Puerto 3",
+     "tag": ".q-select"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 379,
+   "y": 900,
+   "width": 1142,
+   "height": 450
+  },
+  "annotate": [
+   {
+    "css": ".q-menu",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "red/nap/04-puertos-ocupados-en-el-listado",
+  "route": "/cajas-nap",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "type": {
+     "css": ".q-page input[placeholder='Buscar...']"
+    },
+    "value": "NAP-SUR-01",
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 105,
+   "width": 1590,
+   "height": 250
+  },
+  "annotate": [
+   {
+    "css": ".q-table tbody tr:first-child td:nth-child(5)",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "red/nap/05-clientes-de-la-caja",
+  "route": "/cajas-nap",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "type": {
+     "css": ".q-page input[placeholder='Buscar...']"
+    },
+    "value": "NAP-SUR-01",
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "groups",
+     "tag": "button"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification",
+   ".q-tooltip"
+  ],
+  "id": "red/mapa/20-capas-y-filtros",
+  "steps": [
+   {
+    "click": {
+     "text": "layers"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-menu",
+   "pad": 16
+  }
+ },
+ {
+  "id": "red/mapa/22-coordenadas-del-servicio",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:first-child .q-btn",
+     "index": 1
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   }
+  ],
+  "annotate": [
+   {
+    "text": "Coordenadas:",
+    "tag": "label",
+    "n": 1
+   }
+  ],
+  "clip": {
+   "x": 379,
+   "y": 625,
+   "width": 1142,
+   "height": 110
+  }
+ },
+ {
+  "id": "general/router-y-sucursal/01-selectores-del-dashboard",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "clip": {
+   "x": 298,
+   "y": 92,
+   "width": 760,
+   "height": 62
+  }
+ },
+ {
+  "id": "general/router-y-sucursal/02-elegir-el-router",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "eval": "(()=>{const it=[...document.querySelectorAll('.q-menu .q-item')].find(e=>e.textContent.includes('(c7)'));if(it)it.style.display='none';return 1})()",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 92,
+   "width": 760,
+   "height": 250
+  }
+ },
+ {
+  "id": "general/router-y-sucursal/03-router-en-clientes",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "within": ".q-menu",
+     "exact": true
+    },
+    "wait": 2500
+   },
+   {
+    "goto": "/clientes",
+    "wait": 5000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 92,
+   "width": 1000,
+   "height": 120
+  }
+ },
+ {
+  "id": "general/router-y-sucursal/04-router-en-cajas-nap",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1100,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "ROUTER DEMO",
+     "within": ".q-menu",
+     "exact": true
+    },
+    "wait": 2500
+   },
+   {
+    "goto": "/cajas-nap",
+    "wait": 5000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 92,
+   "width": 1590,
+   "height": 100
+  }
+ },
+ {
+  "id": "general/dashboard-periodo/01-calendario",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "event",
+     "tag": "i"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 780,
+   "y": 60,
+   "width": 1100,
+   "height": 640
+  },
+  "captureBeyondViewport": false
+ },
+ {
+  "id": "general/dashboard-periodo/02-rango-aplicado",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-page",
+  "captureBeyondViewport": false,
+  "steps": [
+   {
+    "click": {
+     "text": "event",
+     "tag": "i"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "20",
+     "within": ".q-date",
+     "tag": "button",
+     "exact": true
+    },
+    "wait": 600
+   },
+   {
+    "click": {
+     "text": "25",
+     "within": ".q-date",
+     "tag": "button",
+     "exact": true
+    },
+    "wait": 4500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 700
+  }
+ },
+ {
+  "id": "general/dashboard-periodo/03-modo-mes",
+  "route": "/",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1300,
+  "waitFor": ".q-page",
+  "captureBeyondViewport": false,
+  "steps": [
+   {
+    "click": {
+     "text": "event",
+     "tag": "i"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "1",
+     "within": ".q-date",
+     "tag": "button",
+     "exact": true
+    },
+    "wait": 600
+   },
+   {
+    "click": {
+     "text": "25",
+     "within": ".q-date",
+     "tag": "button",
+     "exact": true
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Mes",
+     "tag": ".q-btn"
+    },
+    "wait": 4500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 700
+  }
+ },
+ {
+  "id": "general/carga/03-menu-excel-cajas-nap",
+  "route": "/cajas-nap",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1200,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-menu",
+   "pad": 0
+  }
+ },
+ {
+  "id": "general/carga/04-ventana-cajas-nap",
+  "route": "/cajas-nap",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1200,
+  "waitFor": ".q-table",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Importar Excel",
+     "within": ".q-menu"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ }
+]

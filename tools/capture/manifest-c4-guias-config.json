@@ -1,0 +1,280 @@
+[
+ {
+  "id": "inicio/primeros-pasos/01-vista-principal",
+  "route": "/",
+  "waitFor": ".q-header",
+  "settle": 7000,
+  "width": 1440,
+  "height": 900,
+  "clip": {
+   "x": 0,
+   "y": 0,
+   "width": 1440,
+   "height": 740
+  }
+ },
+ {
+  "id": "inicio/primeros-pasos/02-menu-lateral",
+  "route": "/",
+  "waitFor": ".q-header",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1800,
+  "steps": [
+   {
+    "click": {
+     "text": "Gestion de Red",
+     "tag": ".q-item"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Gestion de Clientes",
+     "tag": ".q-item"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Finanzas",
+     "tag": ".q-item"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Almacén",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 0,
+   "y": 0,
+   "width": 300,
+   "height": 1760
+  }
+ },
+ {
+  "id": "red/redes-ipv4/03-menu-excel",
+  "route": "/redes-ipv4",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "css": "button.q-btn-dropdown, .q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 1225,
+   "y": 105,
+   "width": 215,
+   "height": 205
+  }
+ },
+ {
+  "id": "red/menu/01-gestion-de-red",
+  "route": "/",
+  "waitFor": ".q-header",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Gestion de Red",
+     "tag": ".q-item"
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 0,
+   "y": 230,
+   "width": 300,
+   "height": 585
+  }
+ },
+ {
+  "id": "red/routers/07-acciones",
+  "route": "/router",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 1560,
+   "y": 190,
+   "width": 300,
+   "height": 100
+  }
+ },
+ {
+  "id": "red/routers/08-reparar-todos",
+  "route": "/router",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 306,
+   "y": 104,
+   "width": 690,
+   "height": 88
+  }
+ },
+ {
+  "id": "almacen/productos/01-listado",
+  "route": "/productos",
+  "waitFor": ".q-table",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 540
+  }
+ },
+ {
+  "id": "acceso/roles/01-listado",
+  "route": "/roles-permisos",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 380
+  }
+ },
+ {
+  "id": "ajustes/empresa/01-ficha",
+  "route": "/ajustes/empresa",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 715
+  },
+  "steps": [
+   {
+    "click": {
+     "css": ".q-toggle",
+     "index": 0
+    },
+    "wait": 1200
+   }
+  ]
+ },
+ {
+  "id": "red/redes-ipv4/04-listado-router",
+  "route": "/redes-ipv4",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 260
+  }
+ },
+ {
+  "route": "/ajustes/plantillas",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "id": "ajustes/plantillas/03-formato-de-ticket",
+  "steps": [
+   {
+    "click": {
+     "text": "FORMATO DE TICKET",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 800
+  }
+ },
+ {
+  "route": "/ajustes/plantillas",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "id": "ajustes/plantillas/04-plantilla-documento",
+  "steps": [
+   {
+    "click": {
+     "text": "PLANTILLA DOCUMENTO",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1200
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 580
+  }
+ },
+ {
+  "route": "/ajustes/plantillas",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "id": "ajustes/plantillas/05-agregar-plantilla",
+  "steps": [
+   {
+    "click": {
+     "text": "PLANTILLA DOCUMENTO",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".add-card",
+     "index": 0
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ }
+]

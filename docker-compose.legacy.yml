@@ -1,0 +1,12 @@
+# Sistema ANTIGUO (manual estático con Nginx). Solo para volver atrás:
+#   docker compose down && docker compose -f docker-compose.legacy.yml up -d --build
+services:
+  ispmax-manual:
+    build:
+      context: .
+      dockerfile: Dockerfile.legacy
+    image: ispmax-manual:latest
+    container_name: ispmax-manual
+    restart: unless-stopped
+    ports:
+      - "8387:8387"

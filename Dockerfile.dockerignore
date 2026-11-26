@@ -1,0 +1,4 @@
+# Contexto de build de `Dockerfile` (BuildKit lo usa en lugar de .dockerignore).
+# El Dockerfile solo copia docker/entrypoint.sh: no se envía nada más.
+*
+!docker/entrypoint.sh

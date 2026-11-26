@@ -1,0 +1,1065 @@
+[
+ {
+  "id": "clientes/contrato/01-pestana-documentos",
+  "route": "/clientes/edit/67ea4ce8-d65e-482c-a7ae-fa0742c6fd1b",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 480
+  }
+ },
+ {
+  "id": "clientes/contrato/02-agregar-contrato",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Agregar Contrato"
+    },
+    "wait": 2000
+   },
+   {
+    "type": {
+     "css": ".q-dialog input.q-field__native",
+     "index": 0
+    },
+    "value": "Contrato de adhesión",
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "12 meses",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Esperando aprobación de cliente",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/contrato/03-agregar-documento",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Agregar Documento"
+    },
+    "wait": 2000
+   },
+   {
+    "type": {
+     "css": ".q-dialog input.q-field__native",
+     "index": 0
+    },
+    "value": "Contrato firmado",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": ".q-dialog input.q-field__native",
+     "index": 1
+    },
+    "value": "PDF con la firma del cliente",
+    "wait": 500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Contrato de adhesión",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/contrato/04-contrato-en-el-listado",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Documentos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 520
+  }
+ },
+ {
+  "id": "clientes/plan/01-servicios-editar",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 372
+  },
+  "annotate": [
+   {
+    "css": ".q-table tbody tr:first-child .q-btn",
+    "index": 1,
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "clientes/plan/02-perfil-internet",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Servicios",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-table tbody tr:first-child .q-btn",
+     "index": 1
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Siguiente",
+     "tag": ".q-btn"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "PLAN 50 MBPS",
+     "tag": ".q-select"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/tercero/01-datos-del-tercero",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1750,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Configuración",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-toggle",
+     "index": 1
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Cédula",
+     "tag": ".q-select"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "RUC",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": "input[placeholder=Requerido]",
+     "index": 0
+    },
+    "value": "1790000000001",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": "input[placeholder=Requerido]",
+     "index": 1
+    },
+    "value": "COMERCIAL EJEMPLO S.A.",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": "input[placeholder=Opcional]",
+     "index": 0
+    },
+    "value": "Av. Principal y Calle 5",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": "input[placeholder=Opcional]",
+     "index": 1
+    },
+    "value": "facturas@comercial-ejemplo.test",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 366,
+   "y": 1040,
+   "width": 1470,
+   "height": 400
+  }
+ },
+ {
+  "id": "clientes/cargo/01-pestana-cargos",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Cargos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 420
+  }
+ },
+ {
+  "id": "clientes/cargo/02-formulario",
+  "route": "/clientes/edit/22fe914f-4e1a-4d93-8380-5f4ed6cad627",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   },
+   {
+    "click": {
+     "text": "Cargos",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "text": "Agregar cargo recurrente"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Pago en 3 Cuotas",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "Agregar Línea",
+     "tag": ".q-btn"
+    },
+    "wait": 1500
+   },
+   {
+    "type": {
+     "css": ".q-dialog textarea",
+     "index": 1
+    },
+    "value": "Alquiler de router Wi-Fi",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": ".q-dialog input[type=number]",
+     "index": 5
+    },
+    "value": "9",
+    "wait": 1000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/importar/01-menu-excel",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown.text-teal-6"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "x": 1100,
+   "y": 60,
+   "width": 780,
+   "height": 260
+  }
+ },
+ {
+  "id": "clientes/importar/02-carga-masiva",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown.text-teal-6"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Importar Excel",
+     "within": ".q-menu"
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/reactivar/01-listado-activar",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 880
+  },
+  "annotate": [
+   {
+    "text": "check_circle",
+    "tag": ".q-icon",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "clientes/reactivar/02-confirmar-activar",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "text": "check_circle",
+     "tag": ".q-icon"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "clientes/retirar/01-listado-iconos",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 880
+  },
+  "annotate": [
+   {
+    "text": "delete",
+    "tag": ".q-icon",
+    "n": 1
+   },
+   {
+    "css": ".q-icon.fa-user-xmark",
+    "index": 0,
+    "n": 2
+   }
+  ]
+ },
+ {
+  "id": "clientes/retirar/02-confirmar-retiro",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-icon.fa-user-xmark",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-toggle"
+    },
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 16
+  },
+  "hide": [
+   ".ag-root-wrapper"
+  ]
+ },
+ {
+  "id": "clientes/retirar/03-confirmar-eliminar",
+  "route": "/clientes",
+  "settle": 4500,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".ag-row",
+  "steps": [
+   {
+    "click": {
+     "text": "delete",
+     "tag": ".q-icon"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 16
+  },
+  "hide": [
+   ".ag-root-wrapper"
+  ]
+ },
+ {
+  "id": "cobranza/grupo/01-boton-cobrar-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Perfil:",
+     "tag": ".q-select"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "10.10.10.30",
+     "within": ".q-menu"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 470
+  },
+  "annotate": [
+   {
+    "text": "cobrar grupo",
+    "tag": ".q-btn",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "cobranza/grupo/02-dialogo-cobrar-grupo",
+  "route": "/clientes/edit/702cb6cc-f129-4b98-a981-a3fb96c53340",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "Perfil:",
+     "tag": ".q-select"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "10.10.10.30",
+     "within": ".q-menu"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "cobrar grupo",
+     "tag": ".q-btn"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA",
+     "within": ".q-menu"
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-dialog .q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA DIRECTA B. DEMO NORTE",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "type": {
+     "css": ".q-dialog input.q-field__native",
+     "index": 0
+    },
+    "value": "DEMO-TR-5001",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": ".q-dialog textarea"
+    },
+    "value": "Cobro de casa y local",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "cobranza/anular-pago/01-listado-eliminar-pago",
+  "route": "/transacciones/true",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page input.q-field__native",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "23",
+     "tag": ".q-date__calendar-item button",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "25",
+     "tag": ".q-date__calendar-item button",
+     "exact": true
+    },
+    "wait": 1500
+   },
+   {
+    "key": "Escape",
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 420,
+   "width": 1590,
+   "height": 430
+  },
+  "annotate": [
+   {
+    "text": "delete",
+    "tag": ".q-btn",
+    "n": 1
+   }
+  ]
+ },
+ {
+  "id": "cobranza/anular-pago/02-motivo-de-anulacion",
+  "route": "/transacciones/true",
+  "settle": 4000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page input.q-field__native",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "23",
+     "tag": ".q-date__calendar-item button",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "25",
+     "tag": ".q-date__calendar-item button",
+     "exact": true
+    },
+    "wait": 1500
+   },
+   {
+    "key": "Escape",
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "delete",
+     "tag": ".q-btn"
+    },
+    "wait": 2000
+   },
+   {
+    "type": {
+     "css": ".q-dialog textarea"
+    },
+    "value": "Pago registrado a otro cliente por error",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "finanzas/conciliacion/02-resultado",
+  "route": "/conciliacion-bancaria",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1900,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   },
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA DIRECTA B. DEMO NORTE",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "DEPOSITO",
+     "within": ".q-menu",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA INTERBANCARIA B. DEMO SUR",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "key": "Escape",
+    "wait": 4000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 850
+  }
+ },
+ {
+  "id": "finanzas/conciliacion/03-filas-por-estado",
+  "route": "/conciliacion-bancaria",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1900,
+  "waitFor": ".q-page",
+  "steps": [
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   },
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 1
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA DIRECTA B. DEMO NORTE",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "DEPOSITO",
+     "within": ".q-menu",
+     "exact": true
+    },
+    "wait": 800
+   },
+   {
+    "click": {
+     "text": "TRANSFERENCIA INTERBANCARIA B. DEMO SUR",
+     "within": ".q-menu"
+    },
+    "wait": 800
+   },
+   {
+    "key": "Escape",
+    "wait": 4000
+   },
+   {
+    "click": {
+     "text": "Discrepancia de valor",
+     "tag": ".q-tab"
+    },
+    "wait": 2500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 1020,
+   "width": 1590,
+   "height": 240
+  }
+ },
+ {
+  "id": "cobranza/promesa/01-formulario",
+  "route": "/",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "steps": [
+   {
+    "click": {
+     "text": "Finanzas",
+     "within": ".q-drawer"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Registrar Pago",
+     "within": ".q-drawer"
+    },
+    "wait": 4000
+   },
+   {
+    "type": {
+     "css": "input[type=search]"
+    },
+    "value": "LEMA",
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 1
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "css": ".q-menu .q-item",
+     "index": 0
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "css": ".q-page .q-select",
+     "index": 2
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Promesa de pago",
+     "within": ".q-menu"
+    },
+    "wait": 2500
+   },
+   {
+    "click": {
+     "css": ".q-page input.q-field__native",
+     "index": 0
+    },
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "30",
+     "tag": ".q-date__calendar-item button",
+     "exact": true
+    },
+    "wait": 1500
+   },
+   {
+    "type": {
+     "css": ".q-page input.q-field__native",
+     "index": 1
+    },
+    "value": "Acordó pagar el viernes",
+    "wait": 800
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 560
+  }
+ }
+]

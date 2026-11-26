@@ -1,0 +1,391 @@
+[
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/03-mapa-general",
+  "steps": [
+   {
+    "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;st.caja_selected=null;return 1})()",
+    "wait": 500
+   },
+   {
+    "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;st.map.jumpTo({center:[-79.8836,-2.1672],zoom:16.1});return 1})()",
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "css": "#box-map-nap",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/04-buscador",
+  "steps": [
+   {
+    "type": {
+     "css": ".q-select input",
+     "index": 1
+    },
+    "value": "NAP-SUR",
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-menu",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/05-ficha-cliente",
+  "steps": [
+   {
+    "type": {
+     "css": ".q-select input",
+     "index": 1
+    },
+    "value": "ANA LUC",
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "ANA LUC",
+     "within": ".q-menu"
+    },
+    "wait": 6000
+   }
+  ],
+  "clip": {
+   "css": ".mapboxgl-popup-content",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/06-nuevo-poste",
+  "steps": [
+   {
+    "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;st.map.jumpTo({center:[-79.884377,-2.167833],zoom:17});return 1})()",
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "edit_location_alt"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Poste",
+     "tag": "button"
+    },
+    "wait": 800
+   },
+   {
+    "mouse": {
+     "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;const p=st.map.project([-79.884771,-2.167308]);const r=st.map.getContainer().getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}})()",
+     "count": 1
+    }
+   },
+   {
+    "type": {
+     "css": ".q-dialog input",
+     "index": 0
+    },
+    "value": "P-024",
+    "wait": 500
+   },
+   {
+    "type": {
+     "css": ".q-dialog input",
+     "index": 2
+    },
+    "value": "Poste frente al parque",
+    "wait": 500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/07-nuevo-tramo",
+  "steps": [
+   {
+    "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;st.map.jumpTo({center:[-79.883074,-2.164291],zoom:17});return 1})()",
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "edit_location_alt"
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Línea",
+     "tag": "button"
+    },
+    "wait": 800
+   },
+   {
+    "mouse": {
+     "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;const p=st.map.project([-79.883074,-2.164291]);const r=st.map.getContainer().getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}})()",
+     "count": 1
+    }
+   },
+   {
+    "mouse": {
+     "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;const p=st.map.project([-79.883649,-2.163855]);const r=st.map.getContainer().getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}})()",
+     "count": 1
+    }
+   },
+   {
+    "mouse": {
+     "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;const p=st.map.project([-79.883647,-2.162951]);const r=st.map.getContainer().getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}})()",
+     "count": 1
+    }
+   },
+   {
+    "key": "Enter",
+    "wait": 1500
+   },
+   {
+    "type": {
+     "css": ".q-dialog input",
+     "index": 0
+    },
+    "value": "Derivación NORTE",
+    "wait": 500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/mapa-nap",
+  "waitFor": "#map canvas",
+  "settle": 7000,
+  "webgl": true,
+  "width": 1900,
+  "height": 1100,
+  "mockFile": "fixtures/c7-mapa-mock.json",
+  "hide": [
+   ".q-notification"
+  ],
+  "id": "red/mapa/08-editar-poste",
+  "steps": [
+   {
+    "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;st.map.jumpTo({center:[-79.883728,-2.166966],zoom:17});return 1})()",
+    "wait": 2000
+   },
+   {
+    "click": {
+     "text": "edit_location_alt"
+    },
+    "wait": 1200
+   },
+   {
+    "mouse": {
+     "eval": "(()=>{const st=document.querySelector('.q-mx-lg.q-mt-md.q-pt-md').__vueParentComponent.setupState;const p=st.map.project([-79.883728,-2.166966]);const r=st.map.getContainer().getBoundingClientRect();return {x:r.left+p.x,y:r.top+p.y}})()",
+     "count": 1
+    }
+   },
+   {
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "route": "/router/edit/611d20e1-7c22-4bb9-b376-b96576295e3b",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/c7-router-mock.json",
+  "id": "red/routers/09-monitoreo",
+  "steps": [
+   {
+    "click": {
+     "text": "Monitoreo",
+     "tag": ".q-tab"
+    },
+    "wait": 32000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 705
+  }
+ },
+ {
+  "route": "/router/edit/611d20e1-7c22-4bb9-b376-b96576295e3b",
+  "waitFor": ".q-tab",
+  "settle": 3500,
+  "width": 1900,
+  "height": 1500,
+  "mockFile": "fixtures/c7-router-mock.json",
+  "id": "red/routers/10-graficos",
+  "steps": [
+   {
+    "click": {
+     "text": "Gráficos",
+     "tag": ".q-tab"
+    },
+    "wait": 15000
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 905
+  },
+  "captureBeyondViewport": false
+ },
+ {
+  "mockFile": "fixtures/c7-pasarela-mock.json",
+  "width": 1900,
+  "height": 1500,
+  "id": "ajustes/pasarelas/01-payphone-verificada",
+  "route": "/ajustes/pasarelas-pago",
+  "waitFor": ".q-tab-panels",
+  "settle": 4000,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 562
+  }
+ },
+ {
+  "mockFile": "fixtures/c7-pasarela-mock.json",
+  "width": 1900,
+  "height": 1500,
+  "id": "cobranza/cobros-pasarela/01-pantalla",
+  "route": "/cobros-pasarela",
+  "waitFor": ".q-page",
+  "settle": 4500,
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 870
+  }
+ },
+ {
+  "mockFile": "fixtures/c7-pasarela-mock.json",
+  "width": 1900,
+  "height": 1500,
+  "id": "cobranza/enlace-de-pago/01-icono-enlace",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-tab",
+  "settle": 4000,
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   }
+  ],
+  "clip": {
+   "x": 298,
+   "y": 88,
+   "width": 1590,
+   "height": 625
+  },
+  "annotate": [
+   {
+    "n": 1,
+    "text": "link",
+    "tag": "button"
+   }
+  ]
+ },
+ {
+  "mockFile": "fixtures/c7-pasarela-mock.json",
+  "width": 1900,
+  "height": 1500,
+  "id": "cobranza/enlace-de-pago/02-dialogo-enlace",
+  "route": "/clientes/edit/f334b5fe-ca6b-40c0-8172-dccc1598fa76",
+  "waitFor": ".q-tab",
+  "settle": 4000,
+  "steps": [
+   {
+    "click": {
+     "text": "Facturación/Pagos",
+     "tag": ".q-tab"
+    },
+    "wait": 3500
+   },
+   {
+    "click": {
+     "text": "link",
+     "tag": "button"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ }
+]

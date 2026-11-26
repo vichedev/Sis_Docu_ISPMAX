@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────
+# ISPMAX · Manual + Portal (administración en /admin/) — Docker Compose
+#
+# Las variables se leen del archivo `.env` junto a este compose
+# (plantilla: .env.docker.example; lo crea install-docker.sh).
+# Guía: portal/DEPLOY.md · Sistema anterior: docker-compose.legacy.yml
+# ─────────────────────────────────────────────────────────────
+name: ispmax-manual
+
+services:
+  ispmax-manual:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ispmax-manual:latest
+    container_name: ispmax-manual
+    restart: unless-stopped
+    stop_grace_period: 30s
+    labels:
+      ispmax.manual.system: "portal"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PORTAL_PUBLIC_PORT:-8387}:8387"
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      TZ: "${TZ:-UTC}"
+      PORTAL_PORT: "8387"
+      PORTAL_HOST: "0.0.0.0"
+      PORTAL_TRUST_PROXY: "${PORTAL_TRUST_PROXY:-true}"
+      PORTAL_ADMIN_ENABLED: "${PORTAL_ADMIN_ENABLED:-true}"
+      PORTAL_ADMIN_ALLOWED_IPS: "${PORTAL_ADMIN_ALLOWED_IPS:-}"
+      PORTAL_COOKIE_SECURE: "${PORTAL_COOKIE_SECURE:-}"
+      PORTAL_ALLOWED_ORIGINS: "${PORTAL_ALLOWED_ORIGINS:-}"
+      # URL pública (canonical, sitemap.xml, robots.txt, Open Graph); vacía = sin definir.
+      PORTAL_PUBLIC_URL: "${PORTAL_PUBLIC_URL:-}"
+      # Seguridad (portal/SECURITY.md): ruta secreta del panel (/admin = sin ocultar), umbral de sondeos por IP,
+      # clave de cifrado de la 2FA (vacía = archivo secret.key en el volumen de datos) y caducidad de las sesiones.
+      PORTAL_ADMIN_PATH: "${PORTAL_ADMIN_PATH:-/admin}"
+      PORTAL_HIDE_ADMIN: "${PORTAL_HIDE_ADMIN:-}"
+      PORTAL_PROBE_THRESHOLD: "${PORTAL_PROBE_THRESHOLD:-20}"
+      PORTAL_SECRET_KEY: "${PORTAL_SECRET_KEY:-}"
+      PORTAL_SESSION_IDLE_H: "${PORTAL_SESSION_IDLE_H:-12}"
+      PORTAL_SESSION_MAX_DAYS: "${PORTAL_SESSION_MAX_DAYS:-7}"
+      PORTAL_RESTART_MODE: "exit"
+      # Dentro de Docker, «Actualizar el sistema» solo trae el código (git) y reinicia: las dependencias, la
+      # migración y la compilación las aplica docker/entrypoint.sh al arrancar (viven en volúmenes).
+      PORTAL_UPDATE_MODE: "entrypoint"
+      PORTAL_WORK_DIR: "/var/lib/ispmax/work"
+      PORTAL_DATA_DIR: "/var/lib/ispmax/data"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-ispmax}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env (use install-docker.sh)}@db:5432/${POSTGRES_DB:-ispmax_manual}"
+    volumes:
+      # Copia del repositorio (el botón "Actualizar el sistema" hace git pull aquí).
+      - ./:/app
+      # Dependencias dentro de volúmenes propios: no se mezclan binarios del host.
+      - ispmax_node_modules_root:/app/node_modules
+      - ispmax_node_modules_portal:/app/portal/node_modules
+      - ispmax_node_modules_web:/app/portal/web/node_modules
+      # Datos del sistema: sitio generado, carpeta de trabajo, paquetes .ispmax, marcadores de arranque.
+      - ispmax_data:/var/lib/ispmax
+      # Clave de despliegue SSH opcional para repositorios privados (solo lectura). Sin ella, se monta /dev/null.
+      - "${GIT_DEPLOY_KEY_FILE:-/dev/null}:/run/keys/deploy_key:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8387/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+    networks:
+      - internal
+
+  db:
+    image: postgres:17-alpine
+    container_name: ispmax-manual-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-ispmax}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env (use install-docker.sh)}"
+      POSTGRES_DB: "${POSTGRES_DB:-ispmax_manual}"
+      TZ: "${TZ:-UTC}"
+    volumes:
+      - ispmax_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - internal
+    # Sin `ports:` a propósito: la base solo es accesible desde la red interna.
+
+volumes:
+  ispmax_pgdata:
+  ispmax_data:
+  ispmax_node_modules_root:
+  ispmax_node_modules_portal:
+  ispmax_node_modules_web:
+
+networks:
+  internal:

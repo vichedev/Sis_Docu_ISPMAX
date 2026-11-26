@@ -1,0 +1,104 @@
+[
+ {
+  "id": "general/carga/01-ventana-redes",
+  "route": "/redes-ipv4",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Importar Excel",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   }
+  ],
+  "clip": {
+   "css": ".q-dialog .q-card",
+   "pad": 0
+  }
+ },
+ {
+  "id": "general/carga/02-resultado-errores",
+  "route": "/cajas-nap",
+  "waitFor": ".q-table",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1200,
+  "steps": [
+   {
+    "click": {
+     "css": ".q-btn-dropdown",
+     "index": 0
+    },
+    "wait": 1200
+   },
+   {
+    "click": {
+     "text": "Importar Excel",
+     "within": ".q-menu"
+    },
+    "wait": 1800
+   },
+   {
+    "upload": {
+     "css": ".q-dialog input[type=file]"
+    },
+    "file": "fixtures/cajas-nap-ficticio.xlsx",
+    "wait": 1500
+   },
+   {
+    "click": {
+     "text": "Cargar cajas NAP",
+     "tag": "button"
+    },
+    "wait": 3000
+   },
+   {
+    "hover": {
+     "css": ".q-dialog .q-list .q-icon.text-negative",
+     "index": 0
+    },
+    "wait": 2000
+   }
+  ],
+  "clip": {
+   "x": 570,
+   "y": 325,
+   "width": 890,
+   "height": 552
+  }
+ },
+ {
+  "id": "soporte/ubicacion-tecnicos/01-capas-tecnicos",
+  "route": "/mapa-nap",
+  "settle": 6000,
+  "width": 1900,
+  "height": 2100,
+  "steps": [
+   {
+    "click": {
+     "text": "layers",
+     "tag": "button"
+    },
+    "wait": 1500
+   }
+  ],
+  "clip": {
+   "css": ".q-menu",
+   "pad": 0
+  },
+  "hide": [
+   ".q-tooltip"
+  ]
+ }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "ispmax-manual-capture",
+  "private": true,
+  "type": "module",
+  "description": "Capturas reproducibles de la UI de ISPMAX para el manual (Edge headless + WebP).",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0",
+    "sharp": "^0.34.0"
+  }
+}

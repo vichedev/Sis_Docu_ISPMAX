@@ -1,0 +1,49 @@
+[
+ {
+  "id": "facturacion/factus/01-pestana-factus",
+  "route": "/ajustes/facturacion",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "steps": [
+   {
+    "click": {
+     "text": "Factus",
+     "tag": ".q-tab"
+    },
+    "wait": 3000
+   }
+  ],
+  "clip": {
+   "css": ".q-tab-panel .q-card",
+   "index": 0,
+   "pad": 8
+  }
+ },
+ {
+  "id": "facturacion/factus/02-pestanas",
+  "route": "/ajustes/facturacion",
+  "settle": 3000,
+  "width": 1900,
+  "height": 1500,
+  "waitFor": ".q-tab",
+  "clip": {
+   "css": ".q-tabs",
+   "pad": 8
+  }
+ },
+ {
+  "id": "facturacion/bcv/01-tarjeta-tasa-bcv",
+  "route": "/ajustes/facturacion",
+  "settle": 3500,
+  "width": 1900,
+  "height": 2200,
+  "waitFor": ".q-page",
+  "clip": {
+   "css": ".q-card",
+   "index": 5,
+   "pad": 0
+  }
+ }
+]

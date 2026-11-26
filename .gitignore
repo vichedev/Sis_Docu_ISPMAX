@@ -1,0 +1,61 @@
+node_modules/
+dist/
+doc_build/
+
+# Copia de trabajo de `assets/` que genera `npm run assets`.
+# La fuente de verdad es `assets/`, que sí está versionada.
+docs/public/
+
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Configuración y datos locales del entorno de desarrollo (no se publican)
+.claude/
+
+# Dependencias de las herramientas auxiliares
+tools/capture/node_modules/
+docs/_nav.json
+
+# Índice del buscador del sitio (lo genera `npm run search`).
+src/search/data.json
+
+# Portal administrativo
+portal/.env
+portal/node_modules/
+portal/web/node_modules/
+portal/web/dist/
+portal/data/
+portal/work/
+portal/work-test/
+portal/data-test/
+
+# Despliegue con Docker (secretos locales)
+/.env
+/.env.bak
+/.env.docker
+install-docker.log
+
+# ── Seguridad: nunca se suben secretos, claves ni datos (red de seguridad ante descuidos) ──────────────────────────────
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.docker.example
+!.env.example
+!**/.env.example
+*.ispmax
+*.dump
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+secret.key
+portal/data*/
+portal/work*/
+RESPALDO*/
+.vscode/
+.idea/
+*.bak
