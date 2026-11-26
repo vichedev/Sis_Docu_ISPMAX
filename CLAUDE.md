@@ -85,7 +85,7 @@ imagen Docker, no se prueban servicios externos reales y no se hacen tareas ajen
 
 ## Git y GitHub
 
-- Repo `mingusmingus/ispmax-manual`, rama `main`. Una rama por tema: `docs/<tema>`. Commit en español con `Co-Authored-By: <modelo> <noreply@anthropic.com>` al final.
+- Repo **`vichedev/Sis_Docu_ISPMAX`** (`https://github.com/vichedev/Sis_Docu_ISPMAX.git`), rama `main` (desde 2026-11-26; el repo antiguo `mingusmingus/ispmax-manual` ya no se usa). **Era público al subirlo: pasarlo a privado.** Historial nuevo (el `.git` anterior se borró); el primer commit es el portal listo para Docker. Antes de subir, comprobar con `git diff --cached --name-only` que no entran `.env`, `*.ispmax`, `*.dump` ni claves (el `.gitignore` los bloquea). `.github/` no se subió: el CI antiguo (`manual.yml`) asume el contenido en `docs/` y fallaría; adaptarlo antes de versionarlo. Una rama por tema: `docs/<tema>`. Commit en español con `Co-Authored-By: <modelo> <noreply@anthropic.com>` al final.
 - **Push por SSH** (`git push -u origin docs/<tema>`): el token de `gh` no tiene el permiso `workflow` y el push HTTPS de cambios en `.github/workflows/` se rechaza.
 - PR con `gh pr create --base main`; el CI (`.github/workflows/manual.yml`) debe quedar verde. **Fusión con merge commit, no squash** (`gh pr merge N --merge`), solo si la persona
   usuaria lo pide. Si los PR están apilados, reorientar cada uno a `main` antes de fusionar. No borrar ramas remotas sin permiso.
