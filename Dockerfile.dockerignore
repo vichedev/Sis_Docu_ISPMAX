@@ -2,3 +2,4 @@
 # El Dockerfile solo copia docker/entrypoint.sh: no se envía nada más.
 *
 !docker/entrypoint.sh
+!docker/boot.sh
