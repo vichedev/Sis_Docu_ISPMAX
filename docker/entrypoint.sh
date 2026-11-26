@@ -121,6 +121,28 @@ else
   fi
 fi
 
+# Tema del manual dinámico (portal/site/dist: cliente + SSR, con Vite). El CONTENIDO nunca se compila aquí: se dibuja
+# al pedirlo desde la base. Solo si cambió el commit o algún package-lock.json, o no existe el tema compilado.
+if [ "${PORTAL_RENDER_MODE:-dynamic}" != "static" ]; then
+  site_cur="$head_id-$(sha package-lock.json)-$(sha portal/package-lock.json)"
+  site_mark="$STATE/site-build.sha"
+  if [ -f portal/site/dist/server/entry-server.js ] && [ -f portal/site/dist/client/.vite/manifest.json ] && [ -f "$site_mark" ] && [ "$(cat "$site_mark")" = "$site_cur" ]; then
+    log "Tema del manual ya compilado para este commit."
+  else
+    log "Compilando el tema del manual (portal/site, npm run site:build)..."
+    rm -f "$site_mark"
+    if run_prefixed portal tema npm run site:build; then
+      echo "$site_cur" > "$site_mark"
+      log "Tema del manual compilado."
+    elif [ -f portal/site/dist/server/entry-server.js ]; then
+      log "AVISO: la compilación del tema falló; se conserva la versión anterior. Revise las líneas [tema] de arriba."
+    else
+      # No se detiene el arranque: el panel y la API siguen disponibles y el manual muestra un aviso (503) hasta compilarlo.
+      log "ERROR: la compilación del tema falló y no hay una versión anterior: el manual público mostrará un aviso. Revise las líneas [tema] de arriba."
+    fi
+  fi
+fi
+
 log "Aplicando el esquema de la base de datos..."
 node portal/server/migrate.mjs || die "La migración del esquema falló."
 

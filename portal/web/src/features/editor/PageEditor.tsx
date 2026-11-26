@@ -11,6 +11,7 @@ import { useBreadcrumbs } from '@/components/layout/Page';
 import { api, ApiError, type Asset, type Page, type Problem } from '@/lib/api';
 import { problemsOf, siteApi } from '@/lib/api.site';
 import { SiteInline, useSite } from '@/features/system/site';
+import { isLive, publishedMessage, savedMessage } from '@/lib/siteModel';
 import { can, errText, useAuth } from '@/lib/auth';
 import { figureSnippet } from '@/lib/assets';
 import { useAsync, useDebounced, useHotkeys, useLocalStorage, useMediaQuery, useUnsavedChanges } from '@/lib/hooks';
@@ -129,13 +130,13 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
       const p = await api.savePage(id, { title: form.title, description: form.description, // grupo y orden solo si cambiaron: el servidor rechaza grupo null y los escribe en el frontmatter.
         grupo: base && form.grupo !== base.grupo ? form.grupo : undefined, orden: base && form.orden !== base.orden && Number.isFinite(orden) && form.orden !== '' ? orden : undefined, frontmatter: fm, body: form.body, status: form.status, version });
       setData(p); setConflict(false); contentChanged();
-      if (!quiet) toast(p.status === 'published' ? (site?.autoPublish === false ? 'Guardado · pulse «Actualizar ahora» para que el manual lo muestre' : 'Guardado · el manual se actualiza en unos segundos') : 'Borrador guardado · no aparece en el manual hasta que lo publique');
+      if (!quiet) toast(savedMessage(p.status, site));
       return p;
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) setConflict(true); else toast(errText(e), 'error');
       return null;
     } finally { setSaving(false); }
-  }, [site?.autoPublish, page, form, base, dirty, canEdit, saving, fmParsed, blocksSafe, tab, id, setData, toast, setPanel]);
+  }, [site, page, form, base, dirty, canEdit, saving, fmParsed, blocksSafe, tab, id, setData, toast, setPanel]);
   useHotkeys({ 'mod+s': () => void save() });
 
   /** Publicar una página en borrador (guarda antes si hay cambios). `force`: solo administración, tras ver los problemas. */
@@ -147,7 +148,8 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
       if (!saved) return;
       const p = await siteApi.publishPage(id, { version: saved.version, force: force || undefined });
       setData(p); setPubProblems(null); contentChanged();
-      toast('Publicada · el manual se actualiza en unos segundos');
+      if (isLive(site)) toast(publishedMessage(site), 'ok', { label: 'Ver', run: () => { window.open(siteHref(p.route, site?.siteUrl), '_blank', 'noopener,noreferrer'); } });
+      else toast(publishedMessage(site));
     } catch (e) {
       const pr = problemsOf(e);
       if (e instanceof ApiError && e.status === 400 && pr.length) setPubProblems(pr);
@@ -316,7 +318,7 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
       {!wide && <Sheet open={panelSheet} onOpenChange={setPanelSheet} side="right" title={canEdit ? 'Bloques y esquema' : 'En esta página'}>{sidePanel(true)}</Sheet>}
 
       <ConfirmDialog open={confirmUnpub} onOpenChange={setConfirmUnpub} danger confirmLabel="Pasar a borrador" title="Pasar a borrador" onConfirm={unpublish}>
-        La página <b>se quitará del manual</b> (se actualiza en unos segundos) y quedará como borrador. No se pierde nada: podrá volver a publicarla.
+        La página <b>se quitará del manual</b>{isLive(site) ? ' al instante' : ' (se actualiza en unos segundos)'} y quedará como borrador. No se pierde nada: podrá volver a publicarla.
       </ConfirmDialog>
       <Dialog open={!!pubProblems} onOpenChange={(o) => { if (!o) setPubProblems(null); }} title="No se puede publicar todavía" footer={<>
         <Button className="mr-auto" onClick={() => setPubProblems(null)}>Corregir primero</Button>

@@ -214,7 +214,24 @@ La pestaña elegida se recuerda (`portal-editor-side`).
 Rutas en `src/routes/index.ts` (`NAV`, `parseRoute`); la lógica pura en `src/routes/paths.ts` (`SETTINGS_SECTIONS`, `settingsSection`, `legacyRedirect`;
 probada con `node --test test/settings.test.mjs`). Direcciones antiguas: `#/sistema` y `#/publicar` → `#/ajustes/sistema` (quien no administra → `#/manual`);
 `#/ajustes` o una sección desconocida → `#/ajustes/general`. `App.tsx` las sustituye con `location.replace` (sin entrada en el historial).
-La paleta Ctrl+K añade «Actualizar el sistema» e «Información del sistema» (admin); el chip del manual enlaza a «Manual publicado».
+La paleta Ctrl+K añade «Actualizar el sistema» e «Información del sistema» (admin) y «Actualizar el manual ahora» (en vivo: «Vaciar la caché del manual»); el chip del manual enlaza a «Manual publicado».
+
+## Modo en vivo del manual (`mode: 'dynamic'`)
+
+El servidor dibuja el manual desde la base de datos: **guardar = ya está visible**. No hay reconstrucciones, trabajos de actualización ni esperas.
+`GET /api/site/status` trae `mode` (`dynamic` | `static`), `state` (`live` | `error` en vivo; `idle` | `pending` | `building` | `error` en estático), `cache {pages, compiled, htmlCached, bytes}`, `themeBuiltAt`, `lastChange {route, at}` y `message`.
+Un servidor sin `mode` se trata como `static` (todo queda como antes). **Una sola decisión: `isLive(status)`** (`src/lib/siteModel.ts`, lógica pura con pruebas en `test/live.test.mjs`, junto a `liveOk`, `fmtBytes` y los textos de los toasts). No comparar `mode` a mano.
+
+| Pieza | En vivo |
+|---|---|
+| `SiteProvider` | sondeo cada 25 s (sin ráfagas tras guardar; basta una consulta). No hay toast de «se actualizó» |
+| `SiteChip` | «Manual en vivo» (verde). Popover: «Los cambios se publican al instante. No hay reconstrucciones», páginas en caché, último cambio (enlace a la ruta), **Ver el manual**, **Vaciar caché** (editor+; `POST /api/site/rebuild` → `{ok, cleared}`, sin `jobId`). `state: 'error'` → «Manual con problemas» con `message` |
+| Manual publicado (`SitePage.tsx` → `LiveSitePage`) | estado, páginas publicadas y borradores, último cambio, caché (compiladas y tamaño), diseño compilado (`themeBuiltAt`), dirección y vista previa. Sin registro ni historial de construcciones |
+| Toasts | guardar publicada: «Guardado · ya está visible en el manual»; publicar: «Publicada · ya está en el manual» con acción **Ver** (abre la ruta); borradores en lote: «… · ya están en el manual» |
+| Ajustes › Actualización del manual | explicación («El manual se sirve en vivo; no hay nada que programar»); `auto_publish*` no llegan y no se muestran |
+| Inicio / Pendientes | sin «cambios pendientes», «sin generar» ni «automático apagado»; solo `error` (falta el diseño compilado) con `message` |
+| Actualizar el sistema | el diálogo dice que se trae el código y se recompila el diseño del manual (rápido, sin tocar el contenido); pasos, registro y reinicio no cambian |
+| Recorrido | el paso «El estado del manual» describe el modo en vivo |
 
 ## Sitio, borradores y manual publicado (Adenda 3: guardar = en vivo, publicar = solo lo nuevo, Git = solo código)
 

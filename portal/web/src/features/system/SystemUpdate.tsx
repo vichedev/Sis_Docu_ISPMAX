@@ -11,7 +11,8 @@ import { parseUpdateResult, siteApi, type SystemVersion } from '@/lib/api.site';
 import { errText } from '@/lib/auth';
 import { useAsync, useJob } from '@/lib/hooks';
 import { fmtDate, jobState, relTime } from '@/lib/util';
-import { JobLogDialog } from './site';
+import { isLive } from '@/lib/siteModel';
+import { JobLogDialog, useSite } from './site';
 import { isDockerMode, parseSteps, stepLabels, updatePlan } from './systemModel';
 
 /* ---------- Espera tras reiniciar ---------- */
@@ -60,6 +61,7 @@ const Muted = ({ children }: { children: ReactNode }) => <span className="text-i
 
 export function SystemUpdate() {
   const toast = useToast();
+  const live = isLive(useSite().status);
   const ver = useAsync(() => siteApi.version(), []);
   const { job, running, id, start } = useJob(siteApi.job);
   const [confirm, setConfirm] = useState(false);
@@ -199,8 +201,8 @@ export function SystemUpdate() {
       )}
 
       <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Actualizar el sistema" confirmLabel="Actualizar el sistema" onConfirm={() => void doUpdate()}>
-        <p className="mb-2">{docker ? 'Trae el código nuevo y reinicia el sistema; al volver puede tardar unos minutos instalando y compilando.' : 'Esto hará, en este orden:'}</p>
-        <ol className="m-0 list-decimal space-y-0.5 pl-5">{updatePlan(v?.updateMode).map((t) => <li key={t}>{t}</li>)}</ol>
+        <p className="mb-2">{docker ? 'Trae el código nuevo y reinicia el sistema; al volver puede tardar unos minutos instalando y compilando.' : live ? 'Trae el código nuevo y recompila el diseño del manual. Es rápido y no toca el contenido. Esto hará, en este orden:' : 'Esto hará, en este orden:'}</p>
+        <ol className="m-0 list-decimal space-y-0.5 pl-5">{updatePlan(v?.updateMode, live).map((t) => <li key={t}>{t}</li>)}</ol>
         <p className="mt-2 text-sm text-ink-3">Si algo falla, se detiene y todo queda como estaba. El contenido del manual no se toca. {behind > 0 ? `Hay ${behind} ${behind === 1 ? 'cambio' : 'cambios'} por traer.` : ''}</p>
       </ConfirmDialog>
       <ConfirmDialog open={confirmRestart} onOpenChange={setConfirmRestart} danger requireText="REINICIAR" title="Reiniciar el sistema" confirmLabel="Reiniciar" onConfirm={() => void doRestart()}>

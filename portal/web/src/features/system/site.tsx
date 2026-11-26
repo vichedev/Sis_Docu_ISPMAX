@@ -11,10 +11,13 @@ import { useWindowEvent } from '@/lib/hooks';
 import { CONTENT_EVENT, STATS_EVENT, fmtDate, jobState, relTime } from '@/lib/util';
 import { cn } from '@/lib/cn';
 import { setSiteBase, siteHref } from '@/lib/siteHref';
+import { clearedMessage, isLive, liveOk, liveProblem } from '@/lib/siteModel';
 
 const FAST_MS = 2000;
 const IDLE_MS = 15000;
 const FAST_AFTER_CHANGE_MS = 20000;
+/** Modo en vivo: no hay nada que esperar, basta un sondeo tranquilo. */
+const LIVE_MS = 25000;
 
 interface SiteCtxValue { status: SiteStatus | null; error: boolean; fetchedAt: number; refresh: () => void }
 const SiteCtx = createContext<SiteCtxValue>({ status: null, error: false, fetchedAt: 0, refresh: () => {} });
@@ -38,14 +41,16 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       const s = await siteApi.status();
       if (!alive.current) return;
       const p = prev.current;
-      if (p && p.state === 'building' && s.state !== 'building') {
+      const live = isLive(s);
+      if (!live && p && p.state === 'building' && s.state !== 'building') {
         if (s.lastBuild?.status === 'error' || s.state === 'error') toast('No se pudo actualizar el manual; el anterior sigue publicado', 'error');
         else toast('El manual se actualizó');
       }
       prev.current = s;
       setSiteBase(s.siteUrl);
       setStatus(s); setError(false); setFetchedAt(Date.now());
-      if (s.state === 'pending' || s.state === 'building' || Date.now() < fastUntil.current) next = FAST_MS;
+      if (live) next = LIVE_MS;
+      else if (s.state === 'pending' || s.state === 'building' || Date.now() < fastUntil.current) next = FAST_MS;
     } catch {
       if (!alive.current) return;
       setError(true);
@@ -63,14 +68,15 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
   /** Tras guardar algo, el servidor tarda un instante en marcar el sitio como «pendiente»: se sondea rápido un rato. */
   const bump = useCallback(() => {
-    fastUntil.current = Date.now() + FAST_AFTER_CHANGE_MS;
+    // En vivo el estado no cambia al guardar (solo el contador de borradores y «último cambio»): una sola consulta.
+    fastUntil.current = isLive(prev.current) ? 0 : Date.now() + FAST_AFTER_CHANGE_MS;
     clearTimeout(timer.current);
     timer.current = setTimeout(() => loop.current(), 350);
   }, []);
   useWindowEvent(CONTENT_EVENT, bump);
   useWindowEvent(STATS_EVENT, bump);
 
-  const refresh = useCallback(() => { fastUntil.current = Date.now() + FAST_AFTER_CHANGE_MS; void tick(); }, [tick]);
+  const refresh = useCallback(() => { fastUntil.current = isLive(prev.current) ? 0 : Date.now() + FAST_AFTER_CHANGE_MS; void tick(); }, [tick]);
   return <SiteCtx.Provider value={{ status, error, fetchedAt, refresh }}>{children}</SiteCtx.Provider>;
 }
 
@@ -97,6 +103,10 @@ export function useSiteLabel() {
   const { status, error, fetchedAt } = useSite();
   const now = useNow(status?.state === 'pending' || status?.state === 'building');
   if (!status) return { key: 'loading' as const, label: error ? 'Sin conexión' : 'Comprobando…', short: '', detail: '' };
+  if (isLive(status)) {
+    if (!liveOk(status)) return { key: 'error' as const, label: 'Manual con problemas', short: '', detail: liveProblem(status) };
+    return { key: 'live' as const, label: 'Manual en vivo', short: '', detail: 'Los cambios se publican al instante. No hay reconstrucciones.' };
+  }
   if (status.state === 'building') {
     const secs = status.building?.startedAt ? Math.max(0, Math.round((now - new Date(status.building.startedAt).getTime()) / 1000)) : 0;
     return { key: 'building' as const, label: 'Actualizando el manual…', short: `${secs} s`, detail: `En curso desde hace ${secs} s (suele tardar unos 35 a 50 s).` };
@@ -138,9 +148,24 @@ export function JobLogDialog({ jobId, open, onOpenChange, title = 'Registro del 
   );
 }
 
+/** «Vaciar caché» del modo en vivo (POST /api/site/rebuild vacía y recalienta la caché; no hay trabajo que seguir). */
+export function useClearCache() {
+  const toast = useToast();
+  const { refresh } = useSite();
+  const [busy, setBusy] = useState(false);
+  const run = useCallback(async () => {
+    setBusy(true);
+    try { const r = await siteApi.rebuild(); toast(clearedMessage(r)); refresh(); }
+    catch (e) { toast(errText(e), 'error'); }
+    finally { setBusy(false); }
+  }, [toast, refresh]);
+  return { busy, run };
+}
+
 const TONE = {
   loading: 'border-line text-ink-3',
   idle: 'border-line text-ink-2 hover:border-line-strong',
+  live: 'border-line text-ink-2 hover:border-line-strong',
   pending: 'border-transparent bg-warn-soft text-warn',
   building: 'border-line text-ink-2 hover:border-line-strong',
   error: 'border-line text-danger hover:border-line-strong',
@@ -164,18 +189,41 @@ export function SiteChip() {
     catch (e) { toast(errText(e), 'error'); }
     finally { setBusy(false); }
   };
-  const Icon = s.key === 'idle' ? CircleCheck : s.key === 'building' ? LoaderCircle : s.key === 'error' ? CircleAlert : s.key === 'pending' ? TriangleAlert : RefreshCw;
+  const live = isLive(status);
+  const clear = useClearCache();
+  const Icon = s.key === 'idle' || s.key === 'live' ? CircleCheck : s.key === 'building' ? LoaderCircle : s.key === 'error' ? CircleAlert : s.key === 'pending' ? TriangleAlert : RefreshCw;
   const lb = status?.lastBuild;
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen} align="end" className="w-80"
+      <Popover open={open} onOpenChange={setOpen} align="end" className="w-80" label="Estado del manual"
         trigger={
           <button type="button" data-coach="site" aria-label={`Estado del manual: ${s.label}${s.short ? ', ' + s.short : ''}`}
             className={cn('inline-flex h-8 max-w-[340px] cursor-pointer items-center gap-1.5 rounded-md border bg-bg px-2.5 text-[13px] font-medium max-sm:px-2', TONE[s.key])}>
-            <Icon size={15} aria-hidden="true" className={cn(s.key === 'idle' && 'text-ok', s.key === 'building' && 'animate-spin text-ink-3')} />
+            <Icon size={15} aria-hidden="true" className={cn((s.key === 'idle' || s.key === 'live') && 'text-ok', s.key === 'building' && 'animate-spin text-ink-3')} />
             <span className="truncate max-sm:hidden" aria-live="polite">{s.label}{s.short && <span className="font-normal tabular-nums"> · {s.short}</span>}</span>
           </button>
         }>
+        {live ? (
+        <div className="flex flex-col gap-3 text-[13.5px]">
+          <div>
+            <strong className="flex items-center gap-2 text-[14px]">{s.label}</strong>
+            {s.key !== 'error' && <p className="mt-1 text-ink-2">{s.detail}</p>}
+          </div>
+          {s.key === 'error' && <p role="alert" className="m-0 rounded-md bg-danger-soft px-2.5 py-2 text-danger">{s.detail}</p>}
+          <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-ink-2">
+            <dt className="text-ink-3">Páginas en caché</dt><dd className="m-0 tabular-nums">{status?.cache?.pages != null ? status.cache.pages.toLocaleString('es') : '—'}</dd>
+            <dt className="text-ink-3">Último cambio</dt>
+            <dd className="m-0 min-w-0">{status?.lastChange?.at
+              ? <span title={fmtDate(status.lastChange.at)}>{relTime(status.lastChange.at)}{status.lastChange.route ? <> · <a href={siteHref(status.lastChange.route, status.siteUrl)} target="_blank" rel="noopener noreferrer" className="break-all font-mono text-[12px]">{status.lastChange.route}</a></> : null}</span>
+              : 'Aún no consta'}</dd>
+          </dl>
+          <div className="flex flex-wrap gap-2">
+            {status?.siteUrl && <Button size="sm" variant="primary" asChild><a href={siteHref('', status.siteUrl)} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /> Ver el manual</a></Button>}
+            {canRebuild && <Button size="sm" disabled={clear.busy} onClick={() => void clear.run()}><RefreshCw size={14} className={clear.busy ? 'animate-spin' : ''} /> Vaciar caché</Button>}
+          </div>
+          <a href="#/manual" onClick={() => setOpen(false)} className="text-[13px]">Más detalles en Manual publicado</a>
+        </div>
+        ) : (
         <div className="flex flex-col gap-3 text-[13.5px]">
           <div>
             <strong className="flex items-center gap-2 text-[14px]">{s.label}</strong>
@@ -201,6 +249,7 @@ export function SiteChip() {
           </div>
           <a href="#/manual" onClick={() => setOpen(false)} className="text-[13px]">Más detalles en Manual publicado</a>
         </div>
+        )}
       </Popover>
       {s.key === 'error' && logId != null && <button type="button" onClick={() => setLog(true)} className="cursor-pointer text-[13px] text-accent-ink underline max-lg:hidden">Ver log</button>}
       <JobLogDialog jobId={logId} open={log} onOpenChange={setLog} title="Registro de la actualización del manual" />
@@ -227,10 +276,11 @@ export function SiteInline({ className }: { className?: string }) {
   const s = useSiteLabel();
   const { status } = useSite();
   if (!status) return null;
+  const live = isLive(status);
   return (
-    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-normal text-ink-3', className)} aria-live="polite" title="Las páginas publicadas actualizan el manual solo al guardarlas">
-      <span aria-hidden="true" className={cn('size-1.5 rounded-full', s.key === 'idle' ? 'bg-ok' : s.key === 'building' ? 'animate-pulse bg-signal' : s.key === 'pending' ? 'bg-warn-dot' : s.key === 'error' ? 'bg-danger' : 'bg-ink-4')} />
-      {status.autoPublish === false ? 'Actualización automática desactivada' : `${s.label}${s.short ? ' · ' + s.short : ''}`}
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-normal text-ink-3', className)} aria-live="polite" title={live ? 'Los cambios guardados en páginas publicadas se ven al instante' : 'Las páginas publicadas actualizan el manual solo al guardarlas'}>
+      <span aria-hidden="true" className={cn('size-1.5 rounded-full', s.key === 'idle' || s.key === 'live' ? 'bg-ok' : s.key === 'building' ? 'animate-pulse bg-signal' : s.key === 'pending' ? 'bg-warn-dot' : s.key === 'error' ? 'bg-danger' : 'bg-ink-4')} />
+      {!live && status.autoPublish === false ? 'Actualización automática desactivada' : `${s.label}${s.short ? ' · ' + s.short : ''}`}
     </span>
   );
 }

@@ -187,3 +187,27 @@ Objetivo de la persona usuaria: login rediseñado y **seguro con los protocolos 
 - Servidor de pruebas: `dev-test-server.mjs` toma `PORTAL_ADMIN_PATH` solo del entorno de la orden (no de `portal/.env`); usuario `agente` / `Agente-Prueba-2026!`.
 ## Interfaz (SEG-UI)
 - **Login rediseñado**, paso de 2FA, cuenta atrás de bloqueo, aviso de Bloq Mayús, mostrar/ocultar contraseña, estados de carga/error accesibles, claro/oscuro, responsive, `autocomplete` correcto para gestores de contraseñas. Pantalla **Mi cuenta** (`#/cuenta`): cambiar contraseña con checklist de política, activar/desactivar 2FA (QR + secreto manual + códigos de recuperación), sesiones activas con «cerrar esta/otras». Pantalla obligatoria para `mustChangePassword` / `mustEnrollTwoFactor`. Usuarios: botón «Restablecer 2FA». Ajustes: sección Seguridad con `require_2fa_for_admins`.
+
+# Adenda 6: manual dinámico — guardar = en vivo, sin construcciones (2026-11-26)
+
+`PORTAL_RENDER_MODE=dynamic` (por defecto; `static` conserva el flujo de las Adendas 3-4 como alternativa temporal). El manual se dibuja al pedirlo desde la BD (`portal/site/engine.mjs`, integrado en `server/http/frontend.mjs`); nada del sitio se escribe en disco; no se crean trabajos `publish`. Detalle técnico: `portal/site/SPIKE.md`, `portal/DEPLOY.md` § 0, `portal/SECURITY.md` § 8.
+
+## API (cambia solo en modo dinámico)
+
+- `GET /api/site/status` (viewer) → `{ mode:'dynamic'|'static', state:'live'|'idle'|'pending'|'building'|'error', live:boolean, cache:{pages,compiled,htmlCached,bytes}, themeBuiltAt:string|null, lastChange:{route,at}|null, drafts:number, siteUrl:string, message?:string }`. En dinámico `state` es siempre `live`, salvo sin tema compilado (`error` + `message`). En estático se añaden los campos de antes (`building`, `lastBuild`, `pendingReasons`, `nextRunInMs`, `autoPublish`, `delayMs`, `siteExists`, `servedBase`, `restartRequired`) y `live:false`.
+- `POST /api/site/rebuild` (editor) y su alias `POST /api/publish` (admin): en dinámico **vacían y recalientan la caché** → `{ ok:true, cleared:n }` (503 si falta el tema); en estático `{ jobId }` como antes. `GET /api/publish/status` en dinámico → `{ running:false, job:null, site:{ mode, exists, url, live } }`.
+- `GET /api/settings`: en dinámico no ofrece `auto_publish` ni `auto_publish_delay` (y `PUT` con ellos → 400). `GET /api/stats`: en dinámico `lastPublish: null`, `unpublished` a cero y `renderMode`.
+- `GET /api/system/info` (admin): `site.mode` y, en dinámico, `site.metrics` (páginas, compiladas, HTML en caché, bytes y límite, expulsiones, compilaciones y tiempo medio, pintados y tiempo medio, aciertos, peticiones compartidas, fallos, páginas inseguras, compilador `{mode, sandboxed, timeouts, alive}`, memoria del proceso, limpieza y poda al arrancar).
+- `PUT /api/pages/:id` y `POST /api/pages/:id/publish` devuelven, si los hay, `linkWarnings: [{level:'warning', message, line}]` (enlaces internos rotos; no bloquean). `POST /api/pages/validate` los incluye en `problems` con `level:'warning'`.
+
+## Invalidación
+
+`ctx.site.markDirty(motivo, { routes? })` (las rutas de páginas, estructura, assets, tours, ajustes de marca y restauración ya lo llaman): en dinámico marca la caché para volver a mirar la BD en la siguiente petición y compila/pinta en segundo plano las rutas tocadas y las más visitadas. Además, una firma barata de la BD (como mucho cada 250 ms) detecta cambios hechos fuera del portal (SQL, `content:import`).
+
+## Rutas públicas del modo dinámico (bajo la base del sitio)
+
+`_site/boot.<hash>.js` (datos del sitio, inmutable), `_site/p/<ruta>.js` (módulo de cada página, `no-cache` + ETag), `_site/search.json` (buscador), `_site/assets/*` (tema compilado, inmutable), `assets/*` (imágenes de mapa de bits y `assets/tours/<slug>.json` desde la BD), iconos de `theme/seo/brand/`. Todas dentro del comodín `GET /*` (la matriz de rutas de `scripts/security-scan.mjs` no cambia).
+
+## Código compartido
+
+Menú lateral y portadas de sección: `scripts/lib/nav-core.mjs` (lo usan `scripts/build-nav.mjs`, `portal/site/nav.mjs` y `server/routes/structure.mjs`). Índice del buscador: `scripts/lib/search-core.mjs` (`scripts/build-search-data.mjs` y `portal/site/search.mjs`). Prueba de paridad del menú y de las portadas: `test/structure-nav.test.mjs`.

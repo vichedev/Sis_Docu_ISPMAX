@@ -32,7 +32,7 @@ export interface AttentionInput {
   /** Tours en borrador (de /api/tours); undefined = no se pudo saber. */
   toursDraft?: number | null;
   /** Estado del manual publicado (de /api/site/status). */
-  site?: { state: string; siteExists?: boolean; autoPublish?: boolean; error?: string | null } | null;
+  site?: { state: string; mode?: string | null; message?: string | null; siteExists?: boolean; autoPublish?: boolean; error?: string | null } | null;
   /** Commits del remoto que faltan (de /api/system/version). */
   behind?: number | null;
   needsRestart?: boolean;
@@ -54,13 +54,17 @@ export function attentionItems(i: AttentionInput): AttentionItem[] {
   const site = { label: 'Ver el manual publicado', href: '#/manual' };
   const sys = { label: 'Abrir la actualización del sistema', href: '#/ajustes/sistema' };
 
-  if (i.site?.state === 'error') {
+  if (i.site?.mode === 'dynamic') {
+    // En vivo no hay reconstrucciones: ni «sin generar» ni «cambios pendientes». Solo falla si falta el diseño compilado.
+    if (i.site.state === 'error') out.push({ id: 'site-error', tone: 'danger', title: 'El manual no se puede mostrar',
+      detail: (i.site.message ?? '').trim() || 'Falta el diseño compilado del manual. Use «Actualizar el sistema» en Ajustes.', action: admin ? sys : editor ? { label: 'Ver el estado', href: '#/manual' } : undefined });
+  } else if (i.site?.state === 'error') {
     out.push({ id: 'site-error', tone: 'danger', title: 'No se pudo actualizar el manual',
       detail: 'El anterior sigue publicado. El registro de Manual publicado indica el motivo.', action: editor ? { label: 'Ver el motivo', href: '#/manual' } : undefined });
   } else if (i.site && i.site.siteExists === false && i.site.state !== 'building') {
     out.push({ id: 'site-missing', tone: 'warn', title: 'El manual todavía no se ha generado', detail: 'Hasta entonces la dirección pública no muestra nada.', action: editor ? site : undefined });
   }
-  if (i.site?.state === 'pending' && i.site.autoPublish === false) {
+  if (i.site?.mode !== 'dynamic' && i.site?.state === 'pending' && i.site.autoPublish === false) {
     out.push({ id: 'site-manual', tone: 'info', title: 'Hay cambios guardados sin llevar al manual', detail: 'La actualización automática está desactivada.', action: editor ? { label: 'Actualizar', href: '#/manual' } : undefined });
   }
   if (i.drafts != null && i.drafts > 0) {

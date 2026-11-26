@@ -4,6 +4,8 @@
  *   const actions = usePageActions(); actions.move(ref); … ; render {actions.dialogs}
  */
 import { useState } from 'react';
+import { useSite } from '@/features/system/site';
+import { isLive } from '@/lib/siteModel';
 import { Button, ConfirmDialog, DescriptionList, Dialog, Field, FieldRow, FieldStack, HelpText, Input, Select, useToast } from '@/components/ui';
 import { api, type StructurePage } from '@/lib/api';
 import { errText } from '@/lib/auth';
@@ -44,6 +46,7 @@ function MoveDialog({ page, onClose }: { page: PageRef; onClose: () => void }) {
 
 export function usePageActions() {
   const toast = useToast();
+  const live = isLive(useSite().status);
   const [moving, setMoving] = useState<PageRef | null>(null);
   const [deleting, setDeleting] = useState<PageRef | null>(null);
 
@@ -77,7 +80,7 @@ export function usePageActions() {
           } catch (e) { toast(errText(e), 'error'); }
           setDeleting(null);
         }}>
-        La página <b>{deleting?.title}</b> se quitará del manual (si estaba publicada, se actualiza solo en unos segundos). Se puede recuperar: no se borra de forma definitiva.
+        La página <b>{deleting?.title}</b> se quitará del manual (si estaba publicada, {live ? 'deja de verse al instante' : 'se actualiza solo en unos segundos'}). Se puede recuperar: no se borra de forma definitiva.
       </ConfirmDialog>
     </>
   );

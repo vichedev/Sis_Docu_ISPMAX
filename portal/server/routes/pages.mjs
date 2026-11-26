@@ -5,6 +5,7 @@ import {
 import { validatePage } from './validate.mjs';
 import { mdxSecurityProblems } from './mdxSafety.mjs';
 import { checkParentRow } from './tree.mjs';
+import { brokenLinkWarnings } from './links.mjs';
 
 /** 400 si el cuerpo o el frontmatter llevan algo ejecutable (ver mdxSafety.mjs). */
 function assertSafe(body, frontmatter) {
@@ -44,10 +45,19 @@ export function registerPageRoutes(app, ctx) {
   const editor = { preHandler: requireRole('editor') };
 
   // Adenda 3: solo lo visible (páginas publicadas) actualiza el sitio; un borrador no dispara nada.
-  const dirty = (reason) => {
+  // Manual dinámico: invalida la caché afectada y compila en segundo plano las rutas tocadas (`routes`).
+  const dirty = (reason, routes) => {
     try {
-      ctx.site?.markDirty?.(reason);
+      ctx.site?.markDirty?.(reason, routes ? { routes } : undefined);
     } catch {}
+  };
+  // Enlaces internos rotos: aviso (no bloquea); el build ya no lo comprueba.
+  const linkWarnings = async (page) => {
+    try {
+      return await brokenLinkWarnings(db, page.body, { extra: [page.route] });
+    } catch {
+      return [];
+    }
   };
 
   async function nextOrden(c, seccion, grupo) {
@@ -99,7 +109,9 @@ export function registerPageRoutes(app, ctx) {
   app.post('/api/pages/validate', viewer, async (request) => {
     const { body, frontmatter } = request.body || {};
     if (typeof body === 'string' && body.length > 2_000_000) throw httpError(413, 'El cuerpo es demasiado grande.');
-    return validatePage({ body, frontmatter }, { assetExists, tourStatus });
+    const v = await validatePage({ body, frontmatter }, { assetExists, tourStatus });
+    if (typeof body === 'string') v.problems.push(...(await linkWarnings({ body, route: request.body?.route })));
+    return v;
   });
 
   app.get('/api/pages/:id', viewer, async (request) => {
@@ -202,7 +214,11 @@ export function registerPageRoutes(app, ctx) {
     });
     const { _wasPublished, ...page } = result;
     await audit(request.user.id, 'page.update', page.route, { id, version: page.version });
-    if (_wasPublished || page.status === 'published') dirty(`página editada: ${page.route}`);
+    if (_wasPublished || page.status === 'published') {
+      dirty(`página editada: ${page.route}`, [page.route]);
+      const warnings = await linkWarnings(page);
+      if (warnings.length) return { ...page, linkWarnings: warnings };
+    }
     return page;
   });
 
@@ -280,7 +296,7 @@ export function registerPageRoutes(app, ctx) {
       return { page: u.rows[0], redirect, from: old.route, vis };
     });
     await audit(request.user.id, 'page.move', result.from, { id, to: result.page.route });
-    if (result.vis) dirty(`página movida: ${result.from} → ${result.page.route}`);
+    if (result.vis) dirty(`página movida: ${result.from} → ${result.page.route}`, [result.page.route]);
     return { ...result.page, redirect: result.redirect };
   });
 
@@ -415,7 +431,7 @@ export function registerPageRoutes(app, ctx) {
     }
     if (published.length) {
       await audit(request.user.id, 'page.publish', null, { ids: published.map((p) => p.id), count: published.length });
-      dirty(published.length === 1 ? `página publicada: ${published[0].route}` : `${published.length} borradores publicados`);
+      dirty(published.length === 1 ? `página publicada: ${published[0].route}` : `${published.length} borradores publicados`, published.map((p) => p.route));
     }
     return { count: published.length, published, skipped };
   });
@@ -434,8 +450,9 @@ export function registerPageRoutes(app, ctx) {
     const res = await tx((c) => setStatus(c, id, 'published', request.user.id, version));
     if (!res.page) throw httpError(409, 'La página ya está publicada.', { currentVersion: res.old.version });
     await audit(request.user.id, 'page.publish', res.page.route, { id, version: res.page.version });
-    dirty(`página publicada: ${res.page.route}`);
-    return res.page;
+    dirty(`página publicada: ${res.page.route}`, [res.page.route]);
+    const warnings = await linkWarnings(res.page);
+    return warnings.length ? { ...res.page, linkWarnings: warnings } : res.page;
   });
 
   app.post('/api/pages/:id/unpublish', editor, async (request) => {

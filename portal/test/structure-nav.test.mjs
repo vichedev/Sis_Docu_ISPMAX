@@ -92,6 +92,25 @@ test('cada sección: grupos, ítems, textos y orden == build-nav del corpus (0 d
   console.log(`   ${items} ítems en ${SEC_KEYS.length} secciones: 0 diferencias con build-nav (${CORPUS.source})`);
 });
 
+test('manual dinámico: menú (portal/site/nav.mjs desde la BD) y portadas generadas == _nav.json e index.mdx de build-nav del corpus', { skip }, async () => {
+  const nav = navDelCorpus();
+  const { buildNav, hubSource, HUBS } = await import('../site/nav.mjs');
+  const { effectiveFrontmatter } = await import('../server/sync/parse.mjs');
+  const pool = app.portal.ctx.pool;
+  const rows = (await pool.query(`SELECT p.*, pp.route AS parent_route FROM pages p LEFT JOIN pages pp ON pp.id = p.parent_id
+    WHERE p.deleted_at IS NULL AND p.status = 'published' ORDER BY p.file_path`)).rows;
+  const lite = rows.map((r) => { const fm = effectiveFrontmatter(r); return { route: r.route, file: `docs/${r.file_path}`, fm, title: fm.title }; });
+  const sidebar = (await pool.query("SELECT content FROM site_files WHERE path = 'docs/sidebar.json'")).rows[0]?.content ?? null;
+  const dyn = buildNav(lite, sidebar);
+  assert.deepEqual(dyn, nav, 'el menú del manual dinámico es el de build-nav');
+  // Portadas de sección (`generado: true`): el mismo texto que escribe build-nav.
+  for (const sec of Object.keys(HUBS)) {
+    const want = readFileSync(path.join(NAV_DIR, 'docs', sec, 'index.mdx'), 'utf8');
+    assert.equal(hubSource(sec, dyn, lite), want, `portada de ${sec}`);
+    assert.match(want, /^generado: true$/m);
+  }
+});
+
 test('la portada de cada sección va aparte y no es un grupo "sin nombre"', { skip }, () => {
   for (const key of ['tareas', 'problemas', 'preguntas', 'referencia', 'conceptos']) {
     const sec = structure.secciones.find((s) => s.key === key);

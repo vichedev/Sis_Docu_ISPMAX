@@ -4,12 +4,21 @@ Sustituye al contenedor antiguo `ispmax-manual` (Nginx estático) por el sistema
 
 | Ruta | Qué sirve |
 |---|---|
-| `/` | El manual (sitio generado desde la base de datos). Responde 503 «El manual se está preparando» mientras no haya contenido |
+| `/` | El manual, **dibujado al pedirlo desde la base de datos** (modo dinámico, por defecto): guardar en el panel = visible en la siguiente visita, sin construir nada. Responde 503 «El manual se está preparando» mientras no haya páginas publicadas |
 | `/admin/` o la ruta secreta (`PORTAL_ADMIN_PATH`) | El panel de administración (con ruta secreta, `/admin` responde como una página inexistente) |
 | `/api` (o `<ruta secreta>/api`) | La API |
 | `/healthz` | Comprobación de salud (la usa Docker) |
 
-La aplicación **no está dentro de la imagen**: corre desde la copia del repositorio montada en `/app`. Así el botón «Actualizar el sistema» del panel funciona dentro del contenedor: en Docker solo trae el código (git) y reinicia; `docker/entrypoint.sh` instala dependencias, compila el panel y migra el esquema al arrancar. PostgreSQL 17 va en un segundo contenedor (`ispmax-manual-db`) sin puerto publicado.
+La aplicación **no está dentro de la imagen**: corre desde la copia del repositorio montada en `/app`. Así el botón «Actualizar el sistema» del panel funciona dentro del contenedor: en Docker solo trae el código (git) y reinicia; `docker/entrypoint.sh` instala dependencias, compila el panel **y el tema del manual** y migra el esquema al arrancar. PostgreSQL 17 va en un segundo contenedor (`ispmax-manual-db`) sin puerto publicado.
+
+## 0. Manual dinámico (desde 2026-11-26)
+
+- **El contenido nunca se compila en disco.** Cada página se compila y se pinta en memoria la primera vez que se pide (o en segundo plano justo después de guardarla) y se guarda en una caché LRU (`PORTAL_SITE_CACHE_MB`, def. 256). No hay «Publicando…», ni trabajos `publish`, ni `portal/work/site`, ni `<datos>/site`.
+- **El tema** (React + Tailwind del repo: `theme/`, `src/components/`, `styles/`) **se compila una vez por despliegue**: `cd portal && npm run site:build` (Vite, ~6-10 s) → `portal/site/dist/` (no se versiona). En Docker lo hace `docker/entrypoint.sh` tras compilar el panel, solo si cambió el commit o algún `package-lock.json` (marca `state/site-build.sha`). Si falta, el servidor arranca igual (panel y API disponibles), escribe en el registro `Falta el tema compilado del manual…` y el manual responde 503 con un aviso; `GET /api/site/status` da `state: "error"` y el mensaje.
+- **Primer arranque en modo dinámico:** borra lo que quedó del flujo anterior (`<PORTAL_WORK_DIR>/site`, `<PORTAL_DATA_DIR>/site`, `site.tmp-*`, `site.old-*`, `site-meta.json`; lo registra con los MB liberados) y poda `publish_jobs` (deja los 20 últimos `publish` y recorta registros de más de 32 KB conservando la línea `RESULTADO`).
+- Variables: `PORTAL_RENDER_MODE` (`dynamic` por defecto; `static` vuelve al build de Rspress por publicación, como alternativa temporal), `PORTAL_SITE_CACHE_MB`, `PORTAL_SITE_WARMUP` (`lazy` por defecto: portada, portadas de sección y las más visitadas; `all`: todas al arrancar, ~10 s en segundo plano), `PORTAL_SITE_COMPILER` (`process` por defecto: proceso hijo con el modelo de permisos de Node; `thread`, `inline`), `PORTAL_SITE_COMPILE_TIMEOUT_S` (def. 30). No hace falta definir ninguna.
+- Métricas (solo admin): `GET /api/system/info` → `site.metrics` (páginas, en caché, bytes, límite, compilaciones, tiempos medios, memoria del proceso).
+- Seguridad del contenido que se evalúa en el servidor: `portal/SECURITY.md` § 8.
 
 ## 1. Lista de comprobación previa
 
@@ -37,7 +46,7 @@ Sin `--yes` pregunta cada dato y pide la contraseña de forma oculta. `bash inst
 
 El script, en orden: comprueba Docker; **avisa del contenedor antiguo y pide confirmación** (o `--yes`) antes de detenerlo y eliminarlo, sin tocar volúmenes ni imágenes; escribe `.env` (permisos 600, contraseña de PostgreSQL aleatoria que no se muestra; un `.env` existente se conserva y se guarda `.env.bak` si usa `--overwrite-env`); detecta `PUID/PGID` del propietario del repositorio; ejecuta `docker compose up -d --build`; espera a `healthy` mostrando el avance de los logs; crea el administrador (la contraseña viaja solo por entorno y stdin, nunca por argumentos) y, con `--content`, importa el paquete. Registro sin contraseñas en `install-docker.log`.
 
-**El primer arranque tarda varios minutos** (instala dependencias de la raíz, `portal/` y `portal/web/` y compila el panel). Los siguientes tardan segundos: el arranque solo repite `npm ci` si cambió algún `package-lock.json` y solo recompila el panel si cambió el commit o el lock.
+**El primer arranque tarda varios minutos** (instala dependencias de la raíz, `portal/` y `portal/web/` y compila el panel y el tema del manual). Los siguientes tardan segundos: el arranque solo repite `npm ci` si cambió algún `package-lock.json` y solo recompila el panel y el tema si cambió el commit o el lock.
 
 Variables (`.env`, plantilla `.env.docker.example`): `POSTGRES_PASSWORD`, `PORTAL_PUBLIC_PORT`, `PUID`, `PGID`, `PORTAL_TRUST_PROXY`, `PORTAL_ADMIN_ENABLED`, `PORTAL_ADMIN_ALLOWED_IPS`, `PORTAL_COOKIE_SECURE`, `PORTAL_ALLOWED_ORIGINS`, `PORTAL_PUBLIC_URL`, `PORTAL_ADMIN_PATH`, `PORTAL_PROBE_THRESHOLD`, `PORTAL_SECRET_KEY`, `PORTAL_SESSION_IDLE_H`, `PORTAL_SESSION_MAX_DAYS`, `GIT_DEPLOY_KEY_FILE`, `TZ`. Las de seguridad se explican en `portal/SECURITY.md`.
 
@@ -47,7 +56,7 @@ Variables (`.env`, plantilla `.env.docker.example`): `POSTGRES_PASSWORD`, `PORTA
 
 Fijados en `docker-compose.yml` (no en `.env`): `PORTAL_RESTART_MODE=exit` y `PORTAL_UPDATE_MODE=entrypoint`. Las demás variables `PORTAL_*` (por ejemplo `PORTAL_SITE_BASE`) están listadas en el comentario inicial de `portal/server/index.mjs`.
 
-**SEO e indexación (`PORTAL_PUBLIC_URL`).** URL pública del manual, sin barra final (`https://doc.ispmax.ec`; plantilla y `--public-url` de `install-docker.sh`). La usan: el `<link rel="canonical">`, `og:url`/`og:image` y los datos estructurados (se fijan **al construir el sitio**: tras cambiarla, `docker compose up -d` y «Reconstruir ahora» en /admin/ -> Sistema) y `/sitemap.xml` y `/robots.txt` (en vivo). Vacía = sin definir: el sitio se genera sin canonical (aviso en el registro del build) y el sitemap usa el host de la petición (`X-Forwarded-*` solo con `PORTAL_TRUST_PROXY`). Se ve, solo lectura, en `GET /api/system/info` (`site.publicUrl`). Con HTTPS detrás del proxy (`X-Forwarded-Proto: https`) el servidor añade `Strict-Transport-Security`. `/robots.txt` y `/sitemap.xml` no requieren sesión.
+**SEO e indexación (`PORTAL_PUBLIC_URL`).** URL pública del manual, sin barra final (`https://doc.ispmax.ec`; plantilla y `--public-url` de `install-docker.sh`). La usan: el `<link rel="canonical">`, `og:url`/`og:image` y los datos estructurados (se leen al arrancar: tras cambiarla, `docker compose up -d`; en modo `static`, además «Reconstruir ahora») y `/sitemap.xml` y `/robots.txt` (en vivo). Vacía = sin definir: el sitio se genera sin canonical (aviso en el registro del build) y el sitemap usa el host de la petición (`X-Forwarded-*` solo con `PORTAL_TRUST_PROXY`). Se ve, solo lectura, en `GET /api/system/info` (`site.publicUrl`). Con HTTPS detrás del proxy (`X-Forwarded-Proto: https`) el servidor añade `Strict-Transport-Security`. `/robots.txt` y `/sitemap.xml` no requieren sesión.
 
 ## 3. Proxy inverso
 
@@ -111,7 +120,8 @@ En ambos casos, `git pull` manual en el host sigue funcionando igual que antes.
 
 ## 7. Actualización
 
-- **Normal:** panel → **Ajustes → Actualización del sistema**: trae el código (git) y reinicia. Las dependencias, la compilación del panel y la migración del esquema las aplica `docker/entrypoint.sh` al arrancar. El reinicio hace salir el proceso y Docker lo vuelve a levantar (`restart: unless-stopped`).
+- **Normal:** panel → **Ajustes → Actualización del sistema**: trae el código (git) y reinicia. Las dependencias, la compilación del panel y del tema del manual y la migración del esquema las aplica `docker/entrypoint.sh` al arrancar. El reinicio hace salir el proceso y Docker lo vuelve a levantar (`restart: unless-stopped`). Fuera de Docker (`PORTAL_UPDATE_MODE=inline`), el propio proceso ejecuta `npm run site:build` si cambió el tema y pide reiniciar.
+- **El contenido no se actualiza aquí:** se edita en el panel y se ve al guardar.
 - **Cambios en `Dockerfile`, `docker-compose.yml` o `docker/entrypoint.sh`** (no los aplica el botón): en el servidor, `git pull && docker compose up -d --build`.
 - Ver logs: `docker compose logs -f ispmax-manual`. Estado: `docker compose ps`.
 
@@ -138,7 +148,9 @@ docker compose -f docker-compose.legacy.yml up -d --build   # vuelve al Nginx es
 | `POSTGRES_PASSWORD` vacío | Compose se niega a arrancar: falta `.env`; ejecute el instalador. |
 | Cambié la contraseña de la base en `.env` y no entra | PostgreSQL solo usa `POSTGRES_PASSWORD` al crear el volumen. Cambie la clave dentro de la base (`ALTER USER`) o recree el volumen (borra datos). |
 | «Actualizar el sistema» no puede hacer pull | Falta credencial para repositorio privado (sección 5) o el árbol tiene cambios locales. |
-| `/` responde 503 «El manual se está preparando» | No hay contenido en la base: cargue un paquete `.ispmax` (sección 4). |
+| `/` responde 503 «El manual se está preparando» | No hay páginas publicadas en la base: cargue un paquete `.ispmax` (sección 4). |
+| `/` responde 503 «El manual no está disponible en este momento» | Falta el tema compilado (modo dinámico). En el registro: `Falta el tema compilado del manual`. Ver las líneas `[tema]` del arranque; a mano: `docker compose exec -u "$(id -u):$(id -g)" ispmax-manual sh -c 'cd portal && npm run site:build'` y `docker compose restart ispmax-manual`. |
+| Volver temporalmente al manual estático | `PORTAL_RENDER_MODE=static` en el entorno del contenedor y `docker compose up -d` (reconstruye en cada publicación como antes). |
 
 ## 10. Qué NO se pudo probar sin Docker
 
@@ -151,3 +163,4 @@ Todo este despliegue se escribió en un equipo Windows **sin Docker**. Se verifi
 - El comportamiento de `docker compose exec -e VAR` sin valor en su versión de Compose (el instalador envía además la contraseña por stdin como respaldo).
 - Que el servidor responda en `/`, `/admin/`, `/api`, `/healthz` con las variables `PORTAL_*` (depende de `portal/server`, que se implementa aparte) y trate como «sin definir» las variables vacías (`PORTAL_ADMIN_ALLOWED_IPS=`, `PORTAL_COOKIE_SECURE=`, `PORTAL_ALLOWED_ORIGINS=`).
 - La sustitución real del contenedor antiguo y el comportamiento de Portainer con el stack existente.
+- **Manual dinámico (2026-11-26):** el paso `npm run site:build` del `entrypoint.sh` dentro del contenedor (Vite con `NODE_ENV=production` y `npm ci --include=dev`), el proceso de compilación con `--permission` en Node 22/Alpine (en Windows con Node 24 sí se probó; si el Node no lo admite, se avisa y se usa un hilo sin entorno) y la memoria real en Linux (en Windows: ver `portal/site/SPIKE.md` y el informe de la integración).

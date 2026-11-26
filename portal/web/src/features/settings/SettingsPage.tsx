@@ -17,6 +17,7 @@ import { useAsync, useUnsavedChanges } from '@/lib/hooks';
 import { go, statsChanged } from '@/lib/util';
 import { settingsPath, type SettingsSection } from '@/routes';
 import { useSite } from '@/features/system/site';
+import { isLive } from '@/lib/siteModel';
 import { SystemUpdate } from '@/features/system/SystemUpdate';
 import { SystemInfo } from '@/features/system/SystemInfo';
 import { SecuritySection } from './SecuritySection';
@@ -95,7 +96,8 @@ function BrandPreview({ title, whatsapp }: { title: unknown; whatsapp: unknown }
 
 export default function SettingsPage({ section }: { section: SettingsSection }) {
   const toast = useToast();
-  const { refresh } = useSite();
+  const { status: siteStatus, refresh } = useSite();
+  const live = isLive(siteStatus);
   const { data, error, loading, reload } = useAsync(() => api.settings(), []);
   const [vals, setVals] = useState<Record<string, unknown>>({});
   const [base, setBase] = useState<Record<string, unknown>>({});
@@ -135,7 +137,8 @@ export default function SettingsPage({ section }: { section: SettingsSection }) 
       if (s === 'general') {
         // ¿El servidor ya programó la actualización del manual? Si no, se ofrece hacerla ahora.
         const st = await siteApi.status().catch(() => null);
-        if (st && (st.state === 'pending' || st.state === 'building')) toast('Guardado · el manual publicado se actualiza en unos segundos');
+        if (isLive(st) || live) toast('Guardado · ya está visible en el manual');
+        else if (st && (st.state === 'pending' || st.state === 'building')) toast('Guardado · el manual publicado se actualiza en unos segundos');
         else toast('Guardado · se verá en el manual en su próxima actualización', 'ok', { label: 'Actualizar ahora', run: () => { siteApi.rebuild().then(() => { toast('Actualizando el manual…', 'info'); refresh(); }).catch((e: unknown) => toast(errText(e), 'error')); } });
       } else toast('Ajustes guardados');
     } catch (e) {
@@ -189,7 +192,15 @@ export default function SettingsPage({ section }: { section: SettingsSection }) 
           {data && <BrandPreview title={vals.site_title} whatsapp={vals.contact_whatsapp} />}
         </div>
       );
-      case 'manual': return (
+      case 'manual': return live ? (
+        <Panel title="El manual se sirve en vivo">
+          <div className="flex flex-col gap-2 text-[13.5px] text-ink-2">
+            <p className="m-0"><strong className="text-ink">El manual se sirve en vivo; no hay nada que programar.</strong></p>
+            <p className="m-0">Cada cambio en una página publicada se ve al instante para quien lee el manual. No hay reconstrucciones, esperas ni actualización automática que activar o desactivar. Las páginas en borrador siguen sin verse hasta que las publique.</p>
+            <p className="m-0 text-ink-3">El estado y «Vaciar caché» están en <a href="#/manual" className="underline">Manual publicado</a>.</p>
+          </div>
+        </Panel>
+      ) : (
         <div className="flex flex-col gap-5">
           {form('manual', (defs) => defs.map((d) => {
             const changed = dirtyKeys([d.key], vals, base).length > 0;
@@ -209,7 +220,7 @@ export default function SettingsPage({ section }: { section: SettingsSection }) 
             }
             return <SettingField key={d.key} def={d} value={vals[d.key]} error={problemOf(d)} changed={changed} onChange={(v) => setVal(d.key, v)} />;
           }), 'Actualización automática')}
-          <p className="m-0 text-sm text-ink-3">El estado, el registro y «Actualizar ahora» están en <a href="#/manual">Manual publicado</a>.</p>
+          <p className="m-0 text-sm text-ink-3">El estado, el registro y «Actualizar ahora» están en <a href="#/manual" className="underline">Manual publicado</a>.</p>
         </div>
       );
       case 'seguridad': return <SecuritySection def={data?.definitions.find((d) => d.key === 'require_2fa_for_admins')} value={data?.settings.require_2fa_for_admins} loading={loading && !data} error={error} onRetry={reload} onSaved={reload} />;
@@ -255,7 +266,7 @@ export default function SettingsPage({ section }: { section: SettingsSection }) 
           <section aria-labelledby="ajustes-seccion" className="min-w-0">
             <header className="mb-4">
               <h2 id="ajustes-seccion" className="text-lg font-semibold">{meta.label}</h2>
-              <p className="mt-0.5 text-ink-3">{meta.description}</p>
+              <p className="mt-0.5 text-ink-3">{live && meta.id === 'manual' ? 'El manual publicado se sirve en vivo: lo que guarda se ve al instante.' : live && meta.id === 'general' ? 'Cómo se presenta el manual publicado a quien lo lee. Los cambios se ven al instante en el manual público.' : meta.description}</p>
             </header>
             {body}
           </section>

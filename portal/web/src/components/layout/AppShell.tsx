@@ -17,6 +17,7 @@ import { NAV_ITEMS, type Route } from '@/routes';
 import { Coach } from '@/features/onboarding/Coach';
 import { useOnboarding } from '@/features/onboarding/useOnboarding';
 import { DraftsLink, SiteChip, useSite } from '@/features/system/site';
+import { clearedMessage, isLive } from '@/lib/siteModel';
 import { AppSidebar } from './AppSidebar';
 import { CrumbsCtx } from './Page';
 import { siteHref } from '@/lib/siteHref';
@@ -42,6 +43,7 @@ function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const { user, setUser } = useAuth();
   const { status: site, refresh } = useSite();
+  const live = isLive(site);
   const toast = useToast();
   const { pref, setPref, isDark } = useTheme();
   const tour = useOnboarding();
@@ -72,14 +74,16 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       l.push({ id: 'sys', label: 'Actualizar el sistema', icon: <CloudDownload size={16} />, run: () => go('/ajustes/sistema'), keywords: 'ajustes versión novedades reiniciar código' });
       l.push({ id: 'info', label: 'Información del sistema', icon: <Info size={16} />, run: () => go('/ajustes/info'), keywords: 'ajustes soporte versión docker base de datos copiar' });
     }
-    if (can(user, 'editor')) l.push({ id: 'rebuild', label: 'Actualizar el manual ahora', icon: <RefreshCw size={16} />, run: () => { siteApi.rebuild().then(() => { toast('Actualizando el manual…', 'info'); refresh(); }).catch((e: unknown) => toast(errText(e), 'error')); }, keywords: 'reconstruir publicar sitio' });
+    if (can(user, 'editor')) l.push(live
+      ? { id: 'rebuild', label: 'Vaciar la caché del manual', icon: <RefreshCw size={16} />, run: () => { siteApi.rebuild().then((r) => { toast(clearedMessage(r)); refresh(); }).catch((e: unknown) => toast(errText(e), 'error')); }, keywords: 'caché cache reconstruir recalentar sitio' }
+      : { id: 'rebuild', label: 'Actualizar el manual ahora', icon: <RefreshCw size={16} />, run: () => { siteApi.rebuild().then(() => { toast('Actualizando el manual…', 'info'); refresh(); }).catch((e: unknown) => toast(errText(e), 'error')); }, keywords: 'reconstruir publicar sitio' });
     l.push({ id: 'list', label: 'Ver todas las páginas en una tabla', icon: <ListTree size={16} />, run: () => go('/paginas'), keywords: 'lista filtrar borradores' });
     for (const n of NAV_ITEMS) if (!n.soon && can(user, n.min)) { const I = n.icon; l.push({ id: `nav${n.path}`, group: 'Ir a', label: n.label, icon: <I size={16} />, run: () => go(n.path) }); }
     l.push({ id: 'site', group: 'Ir a', label: 'Ver el manual (pestaña nueva)', icon: <ExternalLink size={16} />, run: () => window.open(siteHref('', site?.siteUrl), '_blank', 'noopener,noreferrer') });
     l.push({ id: 'theme', group: 'Preferencias', label: 'Cambiar entre modo claro y oscuro', icon: <Moon size={16} />, run: () => setPref(isDark() ? 'light' : 'dark'), keywords: 'tema' });
     l.push({ id: 'tour', group: 'Preferencias', label: 'Ver el recorrido guiado', icon: <CircleHelp size={16} />, run: () => void tour.start(), keywords: 'ayuda tutorial' });
     return l;
-  }, [user, setPref, isDark, tour, site?.siteUrl, toast, refresh]);
+  }, [user, setPref, isDark, tour, site?.siteUrl, live, toast, refresh]);
 
   const sidebarProps = { active: route.name, onTour: () => { setDrawer(false); void tour.start(); }, onShortcuts: () => setKeys(true) };
 

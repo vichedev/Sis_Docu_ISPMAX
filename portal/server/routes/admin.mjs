@@ -20,13 +20,19 @@ const SITE_KEYS = ['site_title', 'contact_whatsapp'];
 const ROLES = ['admin', 'editor', 'viewer'];
 const USER_RE = /^[A-Za-z0-9._-]{3,40}$/;
 
+// Solo del manual estático (construcción tras cada cambio): en el dinámico guardar ya es publicar y no se ofrecen.
+const STATIC_ONLY = new Set(['auto_publish', 'auto_publish_delay']);
+
 export function registerAdminRoutes(app, ctx) {
   const { db, tx, requireRole, audit } = ctx;
   const viewer = { preHandler: requireRole('viewer') };
   const admin = { preHandler: requireRole('admin') };
+  const dynamic = () => ctx.config?.renderMode !== 'static';
+  const defs = () => (dynamic() ? DEFINITIONS.filter((d) => !STATIC_ONLY.has(d.key)) : DEFINITIONS);
 
   // ---- estadísticas
   app.get('/api/stats', viewer, async () => {
+    const live = dynamic();
     const [p, a, u, lp, lb, bs, un] = await Promise.all([
       db.query("SELECT count(*)::int AS pages, count(*) FILTER (WHERE status = 'draft')::int AS drafts FROM pages WHERE deleted_at IS NULL"),
       db.query('SELECT count(*)::int AS n FROM assets'),
@@ -49,19 +55,22 @@ export function registerAdminRoutes(app, ctx) {
       drafts: p.rows[0].drafts,
       assets: a.rows[0].n,
       users: u.rows[0].n,
-      lastPublish: lp.rows[0] || null,
+      // Manual dinámico: no hay construcciones; todo lo guardado ya está en el manual (los borradores van en `drafts`).
+      lastPublish: live ? null : lp.rows[0] || null,
       lastBackup: lb.rows[0] || null,
       bySeccion,
-      unpublished: { ...un.rows[0], total: un.rows[0].pages + un.rows[0].assets + un.rows[0].tours },
+      unpublished: live ? { pages: 0, assets: 0, tours: 0, total: 0 } : { ...un.rows[0], total: un.rows[0].pages + un.rows[0].assets + un.rows[0].tours },
+      renderMode: live ? 'dynamic' : 'static',
     };
   });
 
   // ---- ajustes
   async function allSettings() {
-    const r = await db.query('SELECT key, value FROM settings WHERE key = ANY($1::text[])', [DEFINITIONS.map((x) => x.key)]);
+    const list = defs();
+    const r = await db.query('SELECT key, value FROM settings WHERE key = ANY($1::text[])', [list.map((x) => x.key)]);
     const stored = Object.fromEntries(r.rows.map((x) => [x.key, x.value]));
     const out = {};
-    for (const d of DEFINITIONS) {
+    for (const d of list) {
       const v = d.key in stored ? stored[d.key] : d.def;
       out[d.key] = d.type === 'string' ? (typeof v === 'string' ? v : '') : d.type === 'boolean' ? (typeof v === 'boolean' ? v : d.def) : Number.isInteger(v) ? v : d.def;
     }
@@ -70,7 +79,7 @@ export function registerAdminRoutes(app, ctx) {
 
   app.get('/api/settings', admin, async () => ({
     settings: await allSettings(),
-    definitions: DEFINITIONS.map(({ key, section, label, help, type, options, min, max }) => ({
+    definitions: defs().map(({ key, section, label, help, type, options, min, max }) => ({
       key, label, help, type, section, ...(options ? { options } : {}), ...(max !== undefined ? { ...(min !== undefined ? { min } : {}), max } : {}),
     })),
   }));
@@ -83,6 +92,7 @@ export function registerAdminRoutes(app, ctx) {
       if (INTERNAL_KEYS.includes(k)) throw httpError(400, INTERNAL_MESSAGE);
       const d = DEF_BY_KEY[k];
       if (!d) throw httpError(400, `Ajuste desconocido: ${k}.`);
+      if (dynamic() && STATIC_ONLY.has(k)) throw httpError(400, `El ajuste ${k} no aplica: el manual se actualiza al guardar, sin construcciones.`);
       let v = raw;
       if (d.type === 'string') {
         if (typeof v !== 'string') throw httpError(400, `El ajuste ${k} debe ser texto.`);
@@ -113,7 +123,8 @@ export function registerAdminRoutes(app, ctx) {
     ctx.auth?.invalidateSettings?.();
     const after = await allSettings();
     try {
-      // Título y WhatsApp están en el manual publicado: reconstruir. Los de la programación: reprogramar.
+      // Título y WhatsApp están en el manual publicado: actualizarlo (dinámico: repintar; estático: reconstruir).
+      // Los de la programación: reprogramar.
       if (SITE_KEYS.some((k) => before[k] !== after[k])) ctx.site?.markDirty?.('ajustes del sitio');
       if (before.auto_publish !== after.auto_publish || before.auto_publish_delay !== after.auto_publish_delay) await ctx.site?.settingsChanged?.();
     } catch {}

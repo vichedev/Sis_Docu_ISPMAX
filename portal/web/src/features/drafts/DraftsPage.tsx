@@ -1,6 +1,9 @@
 /* Borradores: páginas nuevas que aún no están en el manual. Publicar = sacarlas a la luz (una, varias o todas). */
 import { useEffect, useMemo, useState } from 'react';
 import { CloudUpload, FilePen } from 'lucide-react';
+import { useSite } from '@/features/system/site';
+import { isLive, publishedManyMessage } from '@/lib/siteModel';
+import { siteHref } from '@/lib/siteHref';
 import { Button, Callout, Checkbox, ConfirmDialog, EmptyState, ErrorState, Pager, Spinner, TBody, TD, TH, THead, TR, Table, useToast } from '@/components/ui';
 import { Page } from '@/components/layout/Page';
 import { api, type PageRow } from '@/lib/api';
@@ -14,6 +17,8 @@ const LIMIT = 50;
 export default function DraftsPage() {
   const { user } = useAuth();
   const toast = useToast();
+  const { status: site } = useSite();
+  const live = isLive(site);
   const canEdit = can(user, 'editor');
   const isAdmin = can(user, 'admin');
   const [offset, setOffset] = useState(0);
@@ -39,7 +44,12 @@ export default function DraftsPage() {
       const r = await siteApi.publishDrafts(b);
       setResult(r);
       setSel(new Set());
-      if (r.count) { toast(`${r.count === 1 ? 'Se publicó 1 página' : `Se publicaron ${r.count} páginas`} · el manual se actualiza en unos segundos`); contentChanged(); }
+      if (r.count) {
+        const first = r.published[0];
+        if (live && first) toast(publishedManyMessage(r.count, site), 'ok', { label: 'Ver', run: () => { window.open(siteHref(first.route, site?.siteUrl), '_blank', 'noopener,noreferrer'); } });
+        else toast(publishedManyMessage(r.count, site));
+        contentChanged();
+      }
       else toast('No se publicó ninguna página', 'info');
       list.reload();
     } catch (e) { toast(errText(e), 'error'); }
@@ -54,7 +64,7 @@ export default function DraftsPage() {
       actions={canEdit && total > 0 ? <Button variant="primary" disabled={busy} onClick={() => setConfirmAll(true)}><CloudUpload size={16} /> Publicar todas ({total})</Button> : undefined}>
       {result && (
         <div className="mb-4 flex flex-col gap-2" role="status">
-          {result.count > 0 && <Callout tone="ok"><strong>{result.count === 1 ? 'Se publicó 1 página.' : `Se publicaron ${result.count} páginas.`}</strong> El manual se actualiza solo en unos segundos.</Callout>}
+          {result.count > 0 && <Callout tone="ok"><strong>{result.count === 1 ? 'Se publicó 1 página.' : `Se publicaron ${result.count} páginas.`}</strong> {live ? 'Ya están en el manual.' : 'El manual se actualiza solo en unos segundos.'}</Callout>}
           {result.skipped.length > 0 && (
             <Callout tone="warn" action={isAdmin && forcible.length ? <Button size="sm" disabled={busy} onClick={() => void run({ ids: forcible.map((s) => s.id), force: true })}>Publicar de todos modos</Button> : undefined}>
               <strong>{result.skipped.length === 1 ? 'No se publicó 1 página:' : `No se publicaron ${result.skipped.length} páginas:`}</strong>

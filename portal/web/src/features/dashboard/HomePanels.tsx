@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, ChevronRight, CircleAlert, CircleCheck, FileT
 import { Avatar, Button, ErrorState, Panel, Skeleton, Tag } from '@/components/ui';
 import { api } from '@/lib/api';
 import type { SiteStatus } from '@/lib/api.site';
+import { isLive, liveOk } from '@/lib/siteModel';
 import { useAsync } from '@/lib/hooks';
 import { ACTION_LABEL, fmtDate, recentPages, relTime, store } from '@/lib/util';
 import { cn } from '@/lib/cn';
@@ -230,9 +231,15 @@ export function SitePreview({ url }: { url: string }) {
 
 export function SitePanel({ status, className }: { status: SiteStatus | null; className?: string }) {
   const lb = status?.lastBuild;
-  const exists = status ? status.siteExists !== false : null;
+  const exists = status ? (isLive(status) ? liveOk(status) : status.siteExists !== false) : null;
   const url = siteHref('', status?.siteUrl);
-  const rows: [string, ReactNode][] = [
+  const live = isLive(status);
+  const rows: [string, ReactNode][] = live ? [
+    ['Dirección', <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12.5px]">{url}<ArrowUpRight size={13} aria-hidden="true" /></a>],
+    ['Estado', <span className={liveOk(status) ? 'text-ok' : 'text-danger'}>{liveOk(status) ? 'En vivo' : 'Con problemas'}</span>],
+    ['Último cambio', status?.lastChange?.at ? <time dateTime={status.lastChange.at} title={fmtDate(status.lastChange.at)}>{relTime(status.lastChange.at)}</time> : <span className="text-ink-3">Aún no consta</span>],
+    ...(status?.cache?.pages != null ? [['Páginas en caché', <span className="tabular-nums">{status.cache.pages.toLocaleString('es')}</span>] as [string, ReactNode]] : []),
+  ] : [
     ['Dirección', <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12.5px]">{url}<ArrowUpRight size={13} aria-hidden="true" /></a>],
     ['Actualizado', lb?.finishedAt ? <time dateTime={lb.finishedAt} title={fmtDate(lb.finishedAt)}>{relTime(lb.finishedAt)}{lb.status === 'error' ? ' (con error)' : ''}</time> : <span className="text-ink-3">Aún no consta</span>],
     ...(lb?.durationMs ? [['Duración', <span className="tabular-nums">{fmtDur(lb.durationMs)}</span>] as [string, ReactNode]] : []),
@@ -243,7 +250,7 @@ export function SitePanel({ status, className }: { status: SiteStatus | null; cl
       {!status ? <div aria-hidden="true" className="flex flex-col gap-3"><Skeleton className="aspect-[16/10] h-auto w-full rounded-md" /><Skeleton className="w-1/2" /></div> : (
         <div className="grid gap-4 @md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] @md:items-start">
           {exists ? <div className="max-sm:hidden"><SitePreview url={url} /></div> : (
-            <div className="grid aspect-[16/10] place-items-center rounded-md border border-dashed max-sm:aspect-auto max-sm:py-6 border-line-strong px-4 text-center text-[13px] text-ink-3">El manual todavía no se ha generado.</div>
+            <div className="grid aspect-[16/10] place-items-center rounded-md border border-dashed max-sm:aspect-auto max-sm:py-6 border-line-strong px-4 text-center text-[13px] text-ink-3">{live ? 'El manual no se puede mostrar todavía.' : 'El manual todavía no se ha generado.'}</div>
           )}
           <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[13px]">
             {rows.map(([k, v]) => <div key={k} className="contents"><dt className="text-ink-3">{k}</dt><dd className="m-0 min-w-0 truncate text-ink-2">{v}</dd></div>)}

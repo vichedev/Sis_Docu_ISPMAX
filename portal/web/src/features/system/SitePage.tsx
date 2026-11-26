@@ -12,9 +12,65 @@ import { can, errText, useAuth } from '@/lib/auth';
 import { fmtDate, relTime } from '@/lib/util';
 import { siteHref } from '@/lib/siteHref';
 import { SitePreview } from '@/features/dashboard/HomePanels';
-import { JobLogDialog, fmtDur, useSite, useSiteLabel } from './site';
+import { api } from '@/lib/api';
+import { useAsync } from '@/lib/hooks';
+import { fmtBytes, isLive, liveOk, liveProblem } from '@/lib/siteModel';
+import { JobLogDialog, fmtDur, useClearCache, useSite, useSiteLabel } from './site';
+
+/** Modo en vivo: el servidor dibuja el manual desde la base de datos; guardar = visible al instante. Sin registro ni construcciones. */
+function LiveSitePage() {
+  const { user } = useAuth();
+  const { status } = useSite();
+  const clear = useClearCache();
+  const st = useAsync(() => api.stats(), []);
+  const url = siteHref('', status?.siteUrl);
+  const ok = liveOk(status);
+  const published = st.data ? st.data.pages - st.data.drafts : null;
+  const lc = status?.lastChange;
+  const cache = status?.cache;
+  return (
+    <Page title="Manual publicado" description="El manual que ven los lectores. Se dibuja en vivo desde lo que guarda aquí: cada cambio en una página publicada se ve al instante. Los borradores no aparecen hasta que se publican."
+      actions={<>
+        {can(user, 'editor') && <Button disabled={!status || clear.busy} onClick={() => void clear.run()}><RefreshCw size={16} className={clear.busy ? 'animate-spin' : ''} /> Vaciar caché</Button>}
+        <Button variant="primary" asChild><a href={url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} /> Ver el manual</a></Button>
+      </>}>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <Panel title="Estado">
+          {!status ? <div aria-hidden="true" className="flex flex-col gap-2.5"><Skeleton className="w-2/3" /><Skeleton className="w-1/2" /><Skeleton className="w-3/5" /></div> : (
+            <div className="flex flex-col gap-4">
+              <DescriptionList items={[
+                ['Estado', <StatusBadge status={ok ? 'ok' : 'error'} label={ok ? 'Manual en vivo' : 'Con problemas'} />],
+                ['Páginas publicadas', published != null ? <span className="tabular-nums">{published.toLocaleString('es')}</span> : <span className="text-ink-3">—</span>],
+                ['Borradores', <span className="flex items-center gap-2"><span className="tabular-nums">{status.drafts}</span> <a href="#/borradores">ver borradores</a></span>],
+                ['Último cambio', lc?.at ? <span title={fmtDate(lc.at)}>{relTime(lc.at)}{lc.route ? <> · <a href={siteHref(lc.route, status.siteUrl)} target="_blank" rel="noopener noreferrer" className="break-all font-mono text-[12.5px]">{lc.route}</a></> : null}</span> : <span className="text-ink-3">Aún no consta</span>],
+                ['Caché', cache?.pages != null || cache?.bytes != null ? <span className="tabular-nums">{cache?.compiled != null ? `${cache.compiled.toLocaleString('es')} páginas compiladas` : `${(cache?.pages ?? 0).toLocaleString('es')} páginas`} · {fmtBytes(cache?.bytes)}</span> : <span className="text-ink-3">—</span>],
+                ['Diseño del manual', status.themeBuiltAt ? <span title={fmtDate(status.themeBuiltAt)}>compilado {relTime(status.themeBuiltAt)}</span> : <span className="text-ink-3">No consta</span>],
+                ['Dirección', <a href={url} target="_blank" rel="noopener noreferrer" className="break-all font-mono text-[12.5px]">{url}</a>],
+              ]} />
+              {!ok && <Callout tone="danger"><strong>El manual no se puede mostrar.</strong> {liveProblem(status)}</Callout>}
+              <p className="m-0 border-t border-line pt-3 text-sm text-ink-3">
+                Los cambios se publican al instante: no hay reconstrucciones ni nada que esperar. «Vaciar caché» solo hace falta si algo no se ve como debe; el manual vuelve a prepararse solo.
+              </p>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Vista previa" description="Así se ve ahora la portada del manual publicado." className="max-sm:hidden">
+          {!status ? <Skeleton className="aspect-[16/10] h-auto w-full rounded-md" /> : ok ? <SitePreview url={url} /> : (
+            <div className="grid aspect-[16/10] place-items-center rounded-md border border-dashed border-line-strong px-4 text-center text-[13px] text-ink-3">El manual no se puede mostrar todavía.</div>
+          )}
+        </Panel>
+      </div>
+    </Page>
+  );
+}
 
 export default function SitePage() {
+  const { status } = useSite();
+  return isLive(status) ? <LiveSitePage /> : <StaticSitePage />;
+}
+
+function StaticSitePage() {
   const { user } = useAuth();
   const toast = useToast();
   const { status, refresh } = useSite();

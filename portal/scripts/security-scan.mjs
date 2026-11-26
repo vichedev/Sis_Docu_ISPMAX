@@ -51,14 +51,20 @@ export const ROUTE_MATRIX = {
 export const ACCEPTED_ADVISORIES = {
   '@fastify/static': 'El portal no usa el listado de directorios ni el enrutado de @fastify/static (serve:false); solo reply.sendFile con rutas ya validadas por safeRelPath. La corrección exige la versión mayor 11 (pendiente de probar con Fastify 5).',
   sharp: 'libvips solo procesa imágenes que sube un editor autenticado (y paquetes .ispmax de un admin). La corrección exige sharp 0.35 (versión mayor: cambia la salida WebP); pendiente de una actualización probada.',
-  vite: 'Solo afecta al servidor de desarrollo de Vite (npm run web:dev); producción sirve el panel ya compilado.',
-  esbuild: 'Solo afecta al servidor de desarrollo (dependencia de Vite).',
+  vite: 'Solo afecta al servidor de desarrollo de Vite (npm run web:dev); producción sirve el panel ya compilado y solo usa `vite build` para compilar el tema del manual (npm run site:build).',
+  esbuild: 'Solo afecta al servidor de desarrollo (dependencia de Vite); el manual dinámico usa solo transform/build en memoria, sin servidor.',
 };
 
 const SENSITIVE = [
   '/.env', '/portal/.env', '/.env.bak', '/.git/config', '/.git/HEAD', '/data/', '/data/secret.key', '/work/', '/node_modules/', '/server/',
   '/server/index.mjs', '/db/schema.sql', '/portal/db/schema.sql', '/package.json', '/portal/package.json', '/index.html.bak', '/install-docker.log',
   '/docker-compose.yml', '/%2e%2e/%2e%2e/.env', '/..%2f..%2f.env', '/%252e%252e/.env', '/static/../../.env',
+];
+// Rutas propias del manual dinámico (server/http/frontend.mjs): no deben salir de lo que sirve el motor.
+const DYNAMIC_TRICKS = [
+  '/_site/../package.json', '/_site/%2e%2e/%2e%2e/.env', '/_site/assets/..%2f..%2fserver%2findex.mjs', '/_site/p/../../.env.js', '/_site/p/%2e%2e/server/auth.js',
+  '/_site/.vite/manifest.json', '/_site/server/entry-server.js', '/_site/client/.vite/manifest.json', '/_site/boot.%00.js', '/assets/../../.env',
+  '/assets/%2e%2e/package.json', '/assets/tours/../../.env', '/_site/p/index.js.bak',
 ];
 const TRICKS = ['/API/stats', '//api/stats', '/./api/stats', '/api/./stats', '/api%2fstats', '/%61pi/stats', '/%2561pi/stats', '/api/stats;x', '/api/stats/', '/x/../api/stats', '/api/users/', '/%61pi/users'];
 const SECRET_RE = /DATABASE_URL|POSTGRES_PASSWORD|CREATE TABLE|"dependencies"|\[core\]|PRIVATE KEY|password_hash/i;
@@ -172,7 +178,25 @@ export async function scan(base, { adminPath = null, insecure = false, log = () 
   const fake = () => `zz-${crypto.randomBytes(5).toString('hex')}`;
   const l1 = await req('POST', `${apiPrefix}/api/auth/login`, { headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: fake(), password: crypto.randomBytes(9).toString('hex') }) });
   add([401, 429].includes(l1.status) && !/no existe|inexistente|desconocido/i.test(l1.body), 'login: mensaje genérico (sin revelar si el usuario existe)', `${l1.status} ${l1.body.slice(0, 60)}`);
-  // 8. Archivos sensibles (al final: cuentan como sondeos)
+  // 8. Manual dinámico: rutas públicas propias (/_site/*, /assets/*) — cabeceras, sin datos internos y sin trucos de ruta
+  let homeHtml = home.body || '';
+  if ([301, 302].includes(home.status) && String(home.headers.location || '').startsWith('/')) homeHtml = (await req('GET', home.headers.location)).body || '';
+  const boot = /src="([^"]*\/_site\/boot\.[\w-]+\.js)"/.exec(homeHtml)?.[1];
+  if (boot) {
+    const prefix = new URL(base).pathname.replace(/\/$/, '');
+    const rel = (u) => (prefix && u.startsWith(prefix) ? u.slice(prefix.length) : u);
+    const siteBase = rel(boot).replace(/_site\/boot\.[\w-]+\.js$/, '');
+    for (const p of [rel(boot), `${siteBase}_site/search.json`, `${siteBase}_site/p/index.js`]) {
+      const r = await req('GET', p);
+      const ok = r.status === 200 && r.headers['x-content-type-options'] === 'nosniff' && /frame-ancestors/.test(r.headers['content-security-policy'] || '') && !r.headers['access-control-allow-origin'] && !SECRET_RE.test(r.body) && !/"(codigo|funcionalidades|sinonimos)"\s*:/.test(r.body) && (!adminPath || !r.body.includes(adminPath + '/'));
+      add(ok, `dinámico: ${p.replace(/boot\.[\w-]+/, 'boot.*')} con cabeceras del manual y sin datos internos`, String(r.status));
+    }
+    for (const t of DYNAMIC_TRICKS) {
+      const r = await req('GET', siteBase.replace(/\/$/, '') + t);
+      add([400, 404].includes(r.status) && !SECRET_RE.test(r.body) && !/import .* from|export \{/.test(r.body), `dinámico: truco ${t}`, String(r.status));
+    }
+  } else add('warn', 'manual dinámico: no se detectó (¿modo static o sin páginas publicadas?)', String(home.status));
+  // 9. Archivos sensibles (al final: cuentan como sondeos)
   for (const p of SENSITIVE) {
     const r = await req('GET', p);
     add([400, 403, 404, 503].includes(r.status) && !SECRET_RE.test(r.body), `no se sirve ${p}`, String(r.status));

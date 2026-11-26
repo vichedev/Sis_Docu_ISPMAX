@@ -44,7 +44,7 @@ export function stepLabels(mode: string | null | undefined, parsed: { total: num
 }
 
 /** Qué hará «Actualizar el sistema», en orden, según el modo (para el diálogo de confirmación). */
-export function updatePlan(mode?: string | null): string[] {
+export function updatePlan(mode?: string | null, live = false): string[] {
   if (isDockerMode(mode)) return [
     'Comprobar que no hay cambios locales sin confirmar.',
     'Traer el código nuevo (solo avanza; nunca borra ni pisa nada).',
@@ -55,7 +55,7 @@ export function updatePlan(mode?: string | null): string[] {
     'Traer el código nuevo (solo avanza; nunca borra ni pisa nada).',
     'Instalar dependencias, solo si cambiaron.',
     'Actualizar la base de datos (sin perder contenido).',
-    'Recompilar el panel y el manual.',
+    live ? 'Recompilar el panel y el diseño del manual (el contenido no se toca y se sigue viendo mientras tanto).' : 'Recompilar el panel y el manual.',
     'Avisar si hace falta reiniciar.',
   ];
 }

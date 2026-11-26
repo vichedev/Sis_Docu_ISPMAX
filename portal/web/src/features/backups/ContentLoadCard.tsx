@@ -2,6 +2,8 @@
    (`ContentLoadCard`, para el Inicio y el espacio de contenido cuando el sistema está vacío). */
 import { useEffect, useRef, useState } from 'react';
 import { CircleCheck, FileArchive, PackageOpen, X } from 'lucide-react';
+import { useSite } from '@/features/system/site';
+import { isLive } from '@/lib/siteModel';
 import { Button, Callout, Card, Field, FileDropzone, Input, SegmentedControl, Spinner, useToast } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { contentApi, uploadPackage, type ContentSummary } from '@/lib/api.content';
@@ -24,6 +26,7 @@ function Bar({ pct, label, indeterminate }: { pct?: number; label: string; indet
 /** Formulario completo: archivo → modo → confirmación → progreso → resultado. */
 export function ContentLoader({ hasContent, autoStart, showCli = true, onDone }: { hasContent: boolean; autoStart?: boolean; showCli?: boolean; onDone?: () => void }) {
   const toast = useToast();
+  const live = isLive(useSite().status);
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<ImportMode>(defaultMode(hasContent));
   const [typed, setTyped] = useState('');
@@ -44,7 +47,7 @@ export function ContentLoader({ hasContent, autoStart, showCli = true, onDone }:
   const state = job ? jobState(job.status) : 'running';
   const result = job && state === 'ok' ? parseImportResult(job.log) : null;
   useEffect(() => {
-    if (jobId != null && state === 'ok' && doneFor.current !== jobId) { doneFor.current = jobId; contentChanged(); toast('Contenido cargado. El manual se está actualizando.'); onDone?.(); }
+    if (jobId != null && state === 'ok' && doneFor.current !== jobId) { doneFor.current = jobId; contentChanged(); toast(live ? 'Contenido cargado · ya está en el manual' : 'Contenido cargado. El manual se está actualizando.'); onDone?.(); }
   }, [state, jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async (f: File | null = file, m: ImportMode = mode) => {
@@ -76,7 +79,7 @@ export function ContentLoader({ hasContent, autoStart, showCli = true, onDone }:
         <Callout tone="ok" icon={<CircleCheck size={16} />}>
           <strong>Contenido cargado.</strong> {!result ? 'Importación terminada.' : result.counts.pages + result.counts.assets + result.counts.tours === 0 && result.skipped > 0 ? 'No había nada nuevo que añadir: todo lo del archivo ya existía.' : <>{countsText(result.counts)}.{result.skipped > 0 && <> Se omitieron {result.skipped} elementos que ya existían.</>}</>}
         </Callout>
-        <p className="m-0 text-sm text-ink-3">El manual se está actualizando: el estado aparece en la barra superior.{result?.safetyFile && <> Antes de reemplazar se guardó un respaldo de seguridad (<code>{result.safetyFile}</code>) en la lista de respaldos.</>}</p>
+        <p className="m-0 text-sm text-ink-3">{live ? 'El contenido ya está en el manual.' : 'El manual se está actualizando: el estado aparece en la barra superior.'}{result?.safetyFile && <> Antes de reemplazar se guardó un respaldo de seguridad (<code>{result.safetyFile}</code>) en la lista de respaldos.</>}</p>
         <div><Button size="sm" onClick={reset}>Cargar otro archivo</Button></div>
       </div>
     );

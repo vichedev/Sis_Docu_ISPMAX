@@ -139,8 +139,8 @@ test('lista blanca de npm, directorios de npm ci y plan por archivos cambiados; 
   assert.equal(npmAllowed(['run', 'web:build']), true);
   for (const bad of [['install'], ['run', 'build'], ['ci', '--ignore-scripts'], ['run', 'migrate', '--', 'x'], ['exec', 'rm'], []]) assert.equal(npmAllowed(bad), false, bad.join(' '));
   assert.deepEqual(npmDirsToInstall(['package-lock.json', 'portal/web/package.json', 'portal/server/a.mjs', 'docs/package.json']), ['', 'portal/web']);
-  assert.deepEqual(plan(['docs/x.mdx', 'assets/a.webp']), { npmDirs: [], web: false, site: false, restart: false });
-  assert.deepEqual(plan(['src/components/Tour.tsx', 'portal/server/ops/site.mjs', 'portal/web/src/App.tsx']), { npmDirs: [], web: true, site: true, restart: true });
+  assert.deepEqual(plan(['docs/x.mdx', 'assets/a.webp']), { npmDirs: [], web: false, site: false, theme: false, restart: false });
+  assert.deepEqual(plan(['src/components/Tour.tsx', 'portal/server/ops/site.mjs', 'portal/web/src/App.tsx']), { npmDirs: [], web: true, site: true, theme: true, restart: true });
   assert.equal(redactText('fatal: https://usuario:clave@example.invalid/r.git no existe'), 'fatal: https://***@example.invalid/r.git no existe');
 });
 

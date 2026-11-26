@@ -20,26 +20,30 @@ import { NewTourDialog } from '@/features/tours/NewTourDialog';
 import { ActivityPanel, AttentionPanel, MetricStrip, RecentPanel, SectionsPanel, SitePanel, type Metric } from './HomePanels';
 import { attentionItems, greeting, plural, sectionOverview } from './homeModel';
 import { siteHref } from '@/lib/siteHref';
+import { isLive } from '@/lib/siteModel';
 
-const DOT = { idle: 'bg-ok', pending: 'bg-warn-dot', building: 'animate-pulse bg-signal', error: 'bg-danger', loading: 'bg-ink-4' } as const;
+const DOT = { live: 'bg-ok', idle: 'bg-ok', pending: 'bg-warn-dot', building: 'animate-pulse bg-signal', error: 'bg-danger', loading: 'bg-ink-4' } as const;
 
 /** Frase de estado bajo el saludo: «El manual está al día · 285 páginas publicadas · actualizado hace 5 min · Ver el manual». */
 function SiteSentence({ published }: { published: number | null }) {
   const { status } = useSite();
   const s = useSiteLabel();
   const missing = status?.siteExists === false && s.key === 'idle';
-  const head = s.key === 'idle' ? (missing ? 'El manual todavía no se ha generado' : 'El manual está al día')
+  const head = s.key === 'live' ? 'El manual está en vivo'
+    : s.key === 'error' && isLive(status) ? 'El manual no se puede mostrar'
+    : s.key === 'idle' ? (missing ? 'El manual todavía no se ha generado' : 'El manual está al día')
     : s.key === 'pending' ? `Hay cambios pendientes${s.short ? ` · ${s.short}` : ''}`
     : s.key === 'building' ? `Actualizando el manual… ${s.short}`
     : s.key === 'error' ? 'No se pudo actualizar el manual · el anterior sigue publicado'
     : s.label;
-  const at = status?.lastBuild?.finishedAt;
+  const live = isLive(status);
+  const at = live ? status?.lastChange?.at : status?.lastBuild?.finishedAt;
   return (
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', missing ? 'bg-warn-dot' : DOT[s.key])} />
       <span aria-live="polite" className={cn(s.key === 'error' ? 'text-danger' : 'text-ink-2')}>{head}</span>
       {published != null && <><span aria-hidden="true" className="text-ink-4">·</span><span>{plural(published, 'página publicada', 'páginas publicadas')}</span></>}
-      {at && s.key !== 'building' && <><span aria-hidden="true" className="text-ink-4">·</span><span title={fmtDate(at)}>actualizado {relTime(at)}</span></>}
+      {at && s.key !== 'building' && <><span aria-hidden="true" className="text-ink-4">·</span><span title={fmtDate(at)}>{live ? 'último cambio' : 'actualizado'} {relTime(at)}</span></>}
       {status && !missing && <><span aria-hidden="true" className="text-ink-4">·</span>
         <a href={siteHref('', status.siteUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium">Ver el manual<ArrowUpRight size={14} aria-hidden="true" /></a></>}
     </span>
@@ -74,7 +78,7 @@ export default function DashboardPage() {
     role: user.role, now: Date.now(),
     drafts: s?.drafts ?? site?.drafts,
     toursDraft,
-    site: site ? { state: site.state, siteExists: site.siteExists, autoPublish: site.autoPublish } : null,
+    site: site ? { state: site.state, mode: site.mode, message: site.message, siteExists: site.siteExists, autoPublish: site.autoPublish } : null,
     behind: ver.data?.behind, needsRestart: ver.data?.needsRestart,
     lastBackupAt: s ? (s.lastBackup?.created_at ?? null) : undefined,
   });

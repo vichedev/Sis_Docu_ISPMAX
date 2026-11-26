@@ -1,6 +1,7 @@
 // Actualizar el SISTEMA (código) desde Git (Adenda 3). El contenido vive en la BD: aquí nunca se reimporta.
 // Pasos: árbol limpio → git fetch + merge --ff-only → npm ci donde cambió package.json/lock → npm run migrate →
-// compilar la interfaz → reconstruir el sitio → informar needsRestart. Nunca reset/checkout/clean/stash/push.
+// compilar la interfaz → compilar el tema del manual (dinámico) o reconstruir el sitio (estático) → informar
+// needsRestart. Nunca reset/checkout/clean/stash/push.
 // Comandos: git (lista blanca de git.mjs) y npm por `node npm-cli.js` con lista blanca propia; sin shell.
 import fs from 'node:fs';
 import net from 'node:net';
@@ -27,7 +28,7 @@ export const defaultUpdateMode = (env = process.env) => (String(env.PORTAL_UPDAT
 /** Directorios (relativos al repo) con dependencias propias. */
 export const NPM_DIRS = ['', 'portal', 'portal/web'];
 /** Scripts de npm permitidos (además de `npm ci`). */
-export const NPM_SCRIPTS = new Set(['migrate', 'web:build']);
+export const NPM_SCRIPTS = new Set(['migrate', 'web:build', 'site:build']);
 
 export function npmAllowed(args) {
   return (args.length === 1 && args[0] === 'ci') || (args.length === 2 && args[0] === 'run' && NPM_SCRIPTS.has(args[1]));
@@ -45,7 +46,9 @@ export function npmDirsToInstall(files) {
 // Cambios que obligan a reconstruir el sitio publicado (theme/: tema propio de Rspress con Tailwind).
 const SITE_RE = /^(rspress\.config\.ts|tsconfig\.json|package(-lock)?\.json|src\/|styles\/|theme\/|scripts\/|portal\/server\/(ops\/publish\.mjs|sync\/))/;
 const WEB_RE = /^portal\/web\//;
-const SERVER_RE = /^portal\/(server\/|db\/|package(-lock)?\.json$)/;
+const SERVER_RE = /^portal\/(server\/|db\/|site\/|package(-lock)?\.json$)/;
+// Cambios que obligan a recompilar el TEMA del manual dinámico (npm run site:build) y a reiniciar.
+const THEME_RE = /^(rspress\.config\.ts|package(-lock)?\.json|src\/|styles\/|theme\/|scripts\/lib\/|portal\/site\/|portal\/package(-lock)?\.json$)/;
 
 /** Qué hay que hacer según los archivos cambiados. */
 export function plan(files) {
@@ -53,6 +56,7 @@ export function plan(files) {
     npmDirs: npmDirsToInstall(files),
     web: files.some(f => WEB_RE.test(f)),
     site: files.some(f => SITE_RE.test(f)),
+    theme: files.some(f => THEME_RE.test(f)),
     restart: files.some(f => SERVER_RE.test(f)),
   };
 }
@@ -137,9 +141,17 @@ export function createSystem({ ctx, jobs, site, gitOps, exec = run, restarter = 
       const r = await ctx.db.query('SELECT current_database() AS name, current_setting($1) AS v', ['server_version']);
       database = { connected: true, name: r.rows[0]?.name ?? null, serverVersion: r.rows[0]?.v ?? null };
     } catch {}
-    const meta = await readMeta();
     const base = await getSiteBase(ctx);
-    const exists = fs.existsSync(path.join(opsPaths().dataSite, 'index.html'));
+    let siteInfo;
+    if (site?.mode === 'dynamic') {
+      // Manual dinámico: modo, caché (páginas, bytes, límite), compilaciones y tiempos (sin rutas del servidor).
+      const m = site.metrics();
+      siteInfo = { mode: 'dynamic', base, exists: (m.pages ?? 0) > 0, pages: m.pages ?? null, lastBuild: null, publicUrl: cfg.publicUrl || null, live: m.live, metrics: m };
+    } else {
+      const meta = await readMeta();
+      const exists = fs.existsSync(path.join(opsPaths().dataSite, 'index.html'));
+      siteInfo = { mode: 'static', base, exists, pages: meta?.pages ?? null, lastBuild: meta?.finishedAt ?? null, publicUrl: cfg.publicUrl || null };
+    }
     let docker = String(process.env.PORTAL_DOCKER || '').trim() === '1';
     if (!docker) docker = fs.existsSync('/.dockerenv');
     const v = await version({ fetch: false });
@@ -147,7 +159,7 @@ export function createSystem({ ctx, jobs, site, gitOps, exec = run, restarter = 
       version: c ? { commit: c.hash, shortCommit: c.short, branch: st.branch, date: c.date, subject: c.subject } : null,
       runtime: { node: process.version, platform: process.platform, docker, uptimeSec: Math.round(process.uptime()) },
       database,
-      site: { base, exists, pages: meta?.pages ?? null, lastBuild: meta?.finishedAt ?? null, publicUrl: cfg.publicUrl || null },
+      site: siteInfo,
       access: {
         adminEnabled: cfg.adminEnabled !== false,
         adminIpRestricted: !!cfg.adminIps && cfg.adminIps.any === false,
@@ -278,7 +290,8 @@ export function createSystem({ ctx, jobs, site, gitOps, exec = run, restarter = 
 
           if (mode === 'entrypoint') {
             // Docker: dependencias, migración y compilación las aplica docker/entrypoint.sh al reiniciar el contenedor.
-            for (const [n, name] of [[3, 'Instalar dependencias'], [4, 'Actualizar el esquema de la base'], [5, 'Compilar la interfaz del portal'], [6, 'Reconstruir el sitio']]) {
+            const sixth = site?.mode === 'dynamic' ? 'Compilar el tema del manual' : 'Reconstruir el sitio';
+            for (const [n, name] of [[3, 'Instalar dependencias'], [4, 'Actualizar el esquema de la base'], [5, 'Compilar la interfaz del portal'], [6, sixth]]) {
               begin(n, name);
               done('omitido', 'se aplica al reiniciar');
             }
@@ -330,15 +343,29 @@ export function createSystem({ ctx, jobs, site, gitOps, exec = run, restarter = 
             done('omitido');
           }
 
-          begin(6, 'Reconstruir el sitio');
-          if (todo.site && site) {
-            const b = await site.buildAndWait(userId, { reason: `actualización del sistema ${from.slice(0, 8)}→${to.slice(0, 8)}` });
-            log(`Construcción #${b.jobId}: ${b.status}`);
-            if (b.status !== 'ok') throw new Error(`La construcción #${b.jobId} falló (ver su log); se conserva el sitio anterior.`);
-            done('ok', `trabajo ${b.jobId}`);
+          if (site?.mode === 'dynamic') {
+            // Manual dinámico: el contenido nunca se construye; solo el tema (una vez por cambio de código) y reinicio.
+            begin(6, 'Compilar el tema del manual (npm run site:build)');
+            const themeMissing = !fs.existsSync(path.join(portalDir, 'site', 'dist', 'server', 'entry-server.js'));
+            if (todo.theme || todo.npmDirs.length || themeMissing) {
+              await npm(portalDir, ['run', 'site:build'], log);
+              result.needsRestart = true; // el servidor carga el tema compilado al arrancar
+              done('ok');
+            } else {
+              log('El tema no cambió; no se recompila.');
+              done('omitido');
+            }
           } else {
-            log('Ningún cambio afecta a la construcción del sitio; no se reconstruye.');
-            done('omitido');
+            begin(6, 'Reconstruir el sitio');
+            if (todo.site && site) {
+              const b = await site.buildAndWait(userId, { reason: `actualización del sistema ${from.slice(0, 8)}→${to.slice(0, 8)}` });
+              log(`Construcción #${b.jobId}: ${b.status}`);
+              if (b.status !== 'ok') throw new Error(`La construcción #${b.jobId} falló (ver su log); se conserva el sitio anterior.`);
+              done('ok', `trabajo ${b.jobId}`);
+            } else {
+              log('Ningún cambio afecta a la construcción del sitio; no se reconstruye.');
+              done('omitido');
+            }
           }
 
           begin(7, 'Reinicio');

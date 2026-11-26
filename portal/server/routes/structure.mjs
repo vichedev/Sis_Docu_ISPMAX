@@ -3,24 +3,17 @@
 import { httpError, SECCIONES, SECCION_KEYS, parseId } from './util.mjs';
 import { TOP_MENU } from './topnav.mjs';
 import { dangerousUrl } from './mdxSafety.mjs';
+import { effectiveGroup, cmpGroups, OTRAS, MAX_DEPTH } from '../../../scripts/lib/nav-core.mjs';
 
 const SIDEBAR_PATH = 'docs/sidebar.json';
 const GROUPS_KEY = 'structure_groups'; // settings: { [seccion]: [nombres de grupos vacíos] }
-const MAX_DEPTH = 3;
 const MAX_NODES = 3000;
-const OTRAS = 'Otras pantallas'; // grupo por defecto de las páginas de /guia que no están en el sidebar (como build-nav)
 
-// Mismo criterio que scripts/build-nav.mjs (orden de ítems, grupo efectivo y orden de grupos).
+// Mismo criterio que el menú publicado (scripts/lib/nav-core.mjs, compartido con build-nav y el manual dinámico):
+// grupo efectivo, orden de grupos, grupo por defecto de /guia y profundidad máxima.
 // La fila trae `eff_orden` (999 si la página no tiene `orden`), como `Number(fm.orden ?? 999)`.
+export { effectiveGroup };
 const byOrden = (a, b) => a.eff_orden - b.eff_orden || String(a.title).localeCompare(String(b.title), 'es') || a.id - b.id;
-const cap = (s) => s.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
-/** Grupo del menú: el `grupo` de la página o, si no tiene, la subcarpeta (capitalizada) o «General». */
-export function effectiveGroup(p, seccion) {
-  if (p.grupo) return p.grupo;
-  const sub = p.route.slice(`/${seccion}/`.length).split('/');
-  return sub.length > 1 ? cap(sub[0]) : 'General';
-}
-const cmpGroups = (a, b) => (a === 'General' ? -1 : b === 'General' ? 1 : a.localeCompare(b, 'es'));
 
 export function registerStructureRoutes(app, ctx) {
   const { db, tx, requireRole, audit } = ctx;

@@ -140,7 +140,15 @@ export function readServerConfig(env = process.env) {
   const update = String(env.PORTAL_UPDATE_MODE || '').trim();
   if (update && !['inline', 'entrypoint'].includes(update)) throw new Error('PORTAL_UPDATE_MODE debe ser "inline" o "entrypoint".');
   const adminPath = parseAdminPath(env.PORTAL_ADMIN_PATH);
+  const render = String(env.PORTAL_RENDER_MODE || '').trim().toLowerCase();
+  if (render && !['dynamic', 'static'].includes(render)) throw new Error('PORTAL_RENDER_MODE debe ser "dynamic" o "static".');
+  const warmup = String(env.PORTAL_SITE_WARMUP || '').trim().toLowerCase();
+  if (warmup && !['lazy', 'all'].includes(warmup)) throw new Error('PORTAL_SITE_WARMUP debe ser "lazy" o "all".');
   return {
+    // Manual público: dibujado al pedirlo desde la BD (dynamic, def.) o generado por Rspress en disco (static).
+    renderMode: render || 'dynamic',
+    siteWarmup: warmup || 'lazy',
+    siteCacheMb: envNumber('PORTAL_SITE_CACHE_MB', env.PORTAL_SITE_CACHE_MB, 256, 16, 16384),
     port: Number(env.PORTAL_PORT) || 4380,
     host: env.PORTAL_HOST || '127.0.0.1',
     trustProxy: parseTrustProxy(env.PORTAL_TRUST_PROXY),

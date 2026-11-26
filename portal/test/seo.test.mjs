@@ -19,6 +19,8 @@ process.env.DATABASE_URL = TEST_URL;
 process.env.PORTAL_ADMIN_USER = 'admin_seo';
 process.env.PORTAL_ADMIN_PASSWORD = 'Clave-de-prueba-1';
 process.env.PORTAL_SITE_AUTO = 'off';
+// Flujo ESTÁTICO (sitio generado en disco): el dinámico se prueba en site-dynamic.test.mjs.
+process.env.PORTAL_RENDER_MODE = 'static';
 delete process.env.PORTAL_PUBLIC_URL;
 const RUN = path.join(PORTAL_ROOT, 'work-test', 'seo-test');
 const DATA = path.join(RUN, 'data');

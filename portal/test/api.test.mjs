@@ -16,6 +16,8 @@ process.env.PORTAL_ADMIN_USER = 'admin_prueba';
 process.env.PORTAL_ADMIN_PASSWORD = 'Clave-de-prueba-1';
 // Sin reconstrucciones automáticas del sitio ni carpetas reales de trabajo (Adenda 3): las rutas solo marcan cambios.
 process.env.PORTAL_SITE_AUTO = 'off';
+// Flujo ESTÁTICO (sitio generado en disco): el dinámico se prueba en site-dynamic.test.mjs.
+process.env.PORTAL_RENDER_MODE = 'static';
 // Las pruebas fijan ajustes internos (ruta del repositorio) por la tabla; en producción esas claves las fija el entorno.
 process.env.PORTAL_ALLOW_INTERNAL_SETTINGS = '1';
 process.env.PORTAL_WORK_DIR = (await import('node:path')).join(PORTAL_ROOT_DIR, 'work-test');

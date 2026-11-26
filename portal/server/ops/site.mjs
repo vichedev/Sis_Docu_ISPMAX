@@ -10,6 +10,7 @@ import { ConflictError } from './jobs.mjs';
 import { codeFingerprint } from './codefp.mjs';
 import { getInternal } from '../settings.mjs';
 import { normDrive } from '../env.mjs';
+import { routesFromReason } from './site-dynamic.mjs';
 
 const MAX_REASONS = 50;
 export const DEFAULT_DELAY_S = 8;
@@ -48,6 +49,7 @@ export function createSite({ ctx, jobs, publisher, servedBase = DEFAULT_BASE, lo
   const failures = { n: 0, fp: null, retryAt: 0 };
   let watchTimer = null;
   let watchBusy = false;
+  let lastChange = null;
 
   const warn = m => logger?.warn?.(`[sitio] ${m}`);
 
@@ -100,6 +102,7 @@ export function createSite({ ctx, jobs, publisher, servedBase = DEFAULT_BASE, lo
    */
   function markDirty(reason) {
     if (closed) return;
+    lastChange = { route: routesFromReason(reason)[0] ?? null, at: new Date().toISOString() };
     addReasons([reason]);
     if (building) {
       rerun = true;
@@ -218,7 +221,14 @@ export function createSite({ ctx, jobs, publisher, servedBase = DEFAULT_BASE, lo
     const siteUrl = base;
     // servedBase puede ser una función (el servidor sirve el sitio con la base con la que se generó: sin reinicios).
     const served = typeof servedBase === 'function' ? servedBase() : servedBase;
+    const meta = await readMeta().catch(() => null);
     return {
+      // Contrato común con el modo dinámico (ops/site-dynamic.mjs).
+      mode: 'static',
+      live: false,
+      cache: { pages: meta?.pages ?? 0, compiled: 0, htmlCached: 0, bytes: 0 },
+      themeBuiltAt: null,
+      lastChange,
       state,
       pendingReasons: [...pending],
       nextRunInMs: nextRunAt ? Math.max(0, nextRunAt - Date.now()) : null,

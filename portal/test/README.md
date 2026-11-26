@@ -40,6 +40,17 @@ Para usar los scripts de la raíz sobre el corpus: `ISPMAX_DOCS_DIR=<root>/docs 
 `build-nav` **escribe** `_nav.json` y los `index.mdx` de cada sección en `ISPMAX_DOCS_DIR`: ejecútelo sobre una copia (así lo hace
 `structure-nav.test.mjs`, en `portal/work-test/nav-test/`), no sobre la caché del corpus ni sobre el repo.
 
+## Manual dinámico (2026-11-26)
+
+`PORTAL_RENDER_MODE` es `dynamic` por defecto. Las pruebas del flujo estático (sitio falso en disco) lo fijan a `static`
+(`api`, `production`, `seo`, `security`, `hidden-admin`); `security` y `hidden-admin` se repiten en dinámico con
+`*.dynamic.test.mjs` (`PORTAL_TEST_RENDER_MODE=dynamic`). Propias del dinámico: `site-dynamic.test.mjs` (servir, guardar = en
+vivo por la API, base `/manual/`, marca, LRU, avalancha, sin tema, limpieza y poda) y `mdx-sandbox.test.mjs` (cargas
+maliciosas, verificador, `vm`, límites y las 285 páginas sin falsos positivos). Las que dibujan páginas necesitan el tema
+compilado (`portal/site/dist`): si falta, `helpers/theme.mjs` lo compila una vez (`npm run site:build`).
+Fuera de `npm test` (lentas): `npm run parity` (build estático del corpus y comparación página a página) y
+`node --expose-gc site/tools/bench.mjs` (tiempos y memoria). Ambas crean y borran su propia base.
+
 ## Ejecutar
 
 ```

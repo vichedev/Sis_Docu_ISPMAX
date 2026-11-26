@@ -2,14 +2,22 @@
 import { apiUrl } from './apiBase';
 import { ApiError, UNAUTH_EVENT, type Job, type Page, type Problem } from './api';
 
-export type SiteState = 'idle' | 'pending' | 'building' | 'error';
+export type SiteState = 'live' | 'idle' | 'pending' | 'building' | 'error';
 export interface SiteLastBuild { status: string; finishedAt: string | null; durationMs: number | null; pages: number | null; jobId: number | null; error?: string | null }
 export interface SiteStatus {
+  /** `dynamic`: el servidor dibuja el manual en vivo (sin reconstrucciones); `static` (o ausente): se reconstruye tras guardar. Ver `lib/siteModel.ts`. */
+  mode?: 'dynamic' | 'static';
   state: SiteState;
-  pendingReasons: string[];
-  nextRunInMs: number | null;
-  building: { jobId: number | null; startedAt: string } | null;
-  lastBuild: SiteLastBuild | null;
+  live?: boolean;
+  cache?: { pages?: number; compiled?: number; htmlCached?: number; bytes?: number };
+  themeBuiltAt?: string | null;
+  lastChange?: { route: string; at: string } | null;
+  message?: string;
+  /** Solo modo estático: pueden faltar en modo en vivo. */
+  pendingReasons?: string[];
+  nextRunInMs?: number | null;
+  building?: { jobId: number | null; startedAt: string } | null;
+  lastBuild?: SiteLastBuild | null;
   drafts: number;
   siteUrl: string;
   autoPublish?: boolean;
@@ -72,7 +80,8 @@ export const problemsOf = (e: unknown): Problem[] => {
 
 export const siteApi = {
   status: () => call<SiteStatus>('GET', '/api/site/status'),
-  rebuild: () => call<{ jobId: number }>('POST', '/api/site/rebuild'),
+  /** Estático: encola una reconstrucción (`jobId`). En vivo: vacía y recalienta la caché (`cleared`). */
+  rebuild: () => call<{ jobId?: number; ok?: boolean; cleared?: number }>('POST', '/api/site/rebuild'),
   job: (id: number) => call<Job>('GET', `/api/jobs/${id}`),
   publishPage: (id: number, b: { version?: number; force?: boolean } = {}) => call<Page>('POST', `/api/pages/${id}/publish`, b),
   unpublishPage: (id: number, b: { version?: number } = {}) => call<Page>('POST', `/api/pages/${id}/unpublish`, b),

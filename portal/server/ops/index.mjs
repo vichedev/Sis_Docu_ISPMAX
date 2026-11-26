@@ -60,20 +60,20 @@ export async function registerOpsRoutes(app, ctx) {
   const base = await getSiteBase(ctx).catch(() => DEFAULT_BASE);
   // ctx.servedBase (función de http/frontend.mjs): base con la que se sirve el sitio actual, sin reinicios.
   const servedBase = typeof ctx.servedBase === 'function' ? ctx.servedBase : base !== '/' ? base : null;
-  const site = createSite({ ctx, jobs, publisher, servedBase, logger: app.log });
+  // Modo dinámico: ctx.siteRuntime (ops/site-dynamic.mjs) hace de programador; no hay construcciones ni trabajos.
+  const dynamic = ctx.siteRuntime?.mode === 'dynamic';
+  const site = dynamic ? ctx.siteRuntime : createSite({ ctx, jobs, publisher, servedBase, logger: app.log });
   const system = createSystem({ ctx, jobs, site, gitOps, restarter: ctx.restarter ?? defaultRestarter(app) });
   ctx.site = site;
   const admin = { preHandler: ctx.requireRole('admin') };
   const editor = { preHandler: ctx.requireRole('editor') };
   const lector = { preHandler: ctx.requireRole('viewer') };
+  // Dinámico: vacía y recalienta la caché ({ ok, cleared }). Estático: lanza una construcción ({ jobId }).
+  const rebuild = async req => (dynamic ? site.rebuild(userIdOf(req)) : { jobId: (await site.rebuild(userIdOf(req))).jobId });
 
   // Sitio (Adenda 3)
   app.get('/api/site/status', lector, wrap(async () => site.status()));
-  app.post(
-    '/api/site/rebuild',
-    editor,
-    wrap(async req => ({ jobId: (await site.rebuild(userIdOf(req))).jobId })),
-  );
+  app.post('/api/site/rebuild', editor, wrap(rebuild));
 
   // Sistema desde Git (solo código)
   // Solo un admin provoca `git fetch` (acceso a la red); los demás roles ven el último estado conocido.
@@ -87,8 +87,16 @@ export async function registerOpsRoutes(app, ctx) {
   );
 
   // Alias compatibles: /api/publish = reconstruir; /api/git/update = actualizar el sistema (ya no reimporta contenido).
-  app.post('/api/publish', admin, wrap(async req => ({ jobId: (await site.rebuild(userIdOf(req))).jobId })));
-  app.get('/api/publish/status', lector, wrap(async () => publisher.status()));
+  app.post('/api/publish', admin, wrap(rebuild));
+  app.get(
+    '/api/publish/status',
+    lector,
+    wrap(async () => {
+      if (!dynamic) return publisher.status();
+      const s = await site.status();
+      return { running: false, job: null, site: { mode: 'dynamic', exists: s.cache.pages > 0, url: s.siteUrl, live: s.live } };
+    }),
+  );
   app.get(
     '/api/git/status',
     lector,

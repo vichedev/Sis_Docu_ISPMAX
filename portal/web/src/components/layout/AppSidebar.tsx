@@ -17,7 +17,7 @@ export function AppSidebar({ active, rail, onToggleRail, onTour, onShortcuts, cl
   return (
     <div className={cn('flex h-full flex-col bg-side', className)}>
       <div className={cn('flex h-[52px] shrink-0 items-center border-b border-line', rail ? 'justify-center' : 'px-3.5')}>
-        <a href="#/" className="flex min-w-0 items-center gap-2.5 text-ink no-underline hover:no-underline" aria-label="Inicio del portal">
+        <a href="#/" className="flex min-w-0 items-center gap-2.5 text-ink no-underline hover:no-underline" aria-label={rail ? "Inicio del portal" : undefined}>
           <img src={`${import.meta.env.BASE_URL}isotipo.webp`} alt="" width={40} height={20} className="h-5 w-10 object-contain" />
           {!rail && <span className="flex flex-col leading-tight"><strong className="text-[13.5px] font-semibold">Manual ISPMAX</strong><small className="text-[11.5px] text-ink-3">Portal de contenido</small></span>}
         </a>

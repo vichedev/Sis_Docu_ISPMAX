@@ -80,16 +80,22 @@ export function parseFrontmatter(src) {
   return { data, body: src.slice(m[0].length) };
 }
 
+/** Texto plano de un cuerpo .mdx (sin código, etiquetas, imágenes ni destinos de enlaces): buscador y recuentos. */
+export const bodyText = body =>
+  body
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\]\([^)]*\)/g, ' ')
+    .replace(/[#*`|>:_\[\]]/g, ' ');
+/** Encabezados Markdown (`# …` a `###### …`) de un cuerpo .mdx. */
+export const bodyHeadings = body => [...body.matchAll(/^#{1,6}\s+(.+)$/gm)].map(h => h[1].trim());
+
 export function loadPages() {
   return walk(DOCS, '.mdx').map(file => {
     const src = readFileSync(file, 'utf8');
     const { data, body } = parseFrontmatter(src);
-    const text = body
-      .replace(/```[\s\S]*?```/g, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-      .replace(/\]\([^)]*\)/g, ' ')
-      .replace(/[#*`|>:_\[\]]/g, ' ');
+    const text = bodyText(body);
     return {
       file: path.relative(ROOT, file).replace(/\\/g, '/'),
       route: routeOf(file),
@@ -98,7 +104,7 @@ export function loadPages() {
       body,
       text,
       words: text.split(/\s+/).filter(Boolean).length,
-      headings: [...body.matchAll(/^#{1,6}\s+(.+)$/gm)].map(h => h[1].trim()),
+      headings: bodyHeadings(body),
       links: [
         ...[...body.matchAll(/\]\((\/[^)\s]*)\)/g)].map(m => m[1]),
         ...[...body.matchAll(/(?:href|link|to)=["'](\/[^"']*)["']/g)].map(m => m[1]),

@@ -18,6 +18,9 @@ process.env.DATABASE_URL = TEST_URL;
 process.env.PORTAL_ADMIN_USER = 'admin_oculto';
 process.env.PORTAL_ADMIN_PASSWORD = 'Clave-de-prueba-1';
 process.env.PORTAL_SITE_AUTO = 'off';
+// Se ejecuta en los dos modos: estático aquí y dinámico desde hidden-admin.dynamic.test.mjs.
+const DYNAMIC = process.env.PORTAL_TEST_RENDER_MODE === 'dynamic';
+process.env.PORTAL_RENDER_MODE = DYNAMIC ? 'dynamic' : 'static';
 const RUN = path.join(PORTAL_ROOT, 'work-test', 'hidden-admin-test');
 process.env.PORTAL_WORK_DIR = path.join(RUN, 'work');
 process.env.PORTAL_DATA_DIR = path.join(RUN, 'data');
@@ -79,6 +82,12 @@ before(async () => {
   await pool.query(
     "INSERT INTO pages (route, file_path, seccion, title, status) VALUES ('/guia/inicio','guia/inicio.mdx','guia','Guía','published'), ('/tareas/x','tareas/x.mdx','tareas','Tarea','published')"
   );
+  if (DYNAMIC) {
+    // Manual dinámico: el sitio sale de la BD (con el tema compilado), no de los archivos de arriba.
+    (await import('./helpers/theme.mjs')).ensureTheme();
+    await pool.query("INSERT INTO pages (route, file_path, seccion, title, status, body, frontmatter) VALUES ('/', 'index.mdx', 'raiz', 'Inicio', 'published', '# Inicio\n\n[Guía](/guia/inicio) · [Tarea](/tareas/x)', '{\"title\":\"Inicio\"}')");
+    await pool.query("UPDATE pages SET body = '# Texto\n\nContenido.', frontmatter = jsonb_build_object('title', title) WHERE route IN ('/guia/inicio', '/tareas/x')");
+  }
   app = await mk();
   await app.portal.ensureAdmin();
 });
@@ -91,7 +100,7 @@ after(async () => {
 test('modo oculto: /api/*, /admin*, variantes y rutas típicas dan EXACTAMENTE el 404 de una ruta inexistente', async () => {
   const ref = await get(app, '/una-ruta-que-no-existe-7f3a');
   assert.equal(ref.statusCode, 404);
-  assert.match(ref.body, /Esta página no existe/);
+  assert.match(ref.body, DYNAMIC ? /No encontramos esta página del manual/ : /Esta página no existe/);
   for (const u of ['/api/auth/me', '/api/stats', '/api/auth/login', '/api', '/api/', '/admin', '/admin/', '/admin/assets/index-Zz123456.js', '/API/stats', '/%61pi/auth/me', '//api/stats', '/%61dmin/', '/Admin', '/login', '/wp-admin/', '/administrator/', '/zz-secreto-tes', '/zz-secreto-testx/']) {
     sameAsRandom404(await get(app, u), ref, u);
   }
@@ -189,13 +198,33 @@ test('rastreo de descubribilidad: el sitio público (HTML, JS, CSS, JSON, manifi
   }
   assert.ok(seen.size >= 10, `recorridas ${seen.size} URL`);
   assert.deepEqual(hits, []);
+  if (DYNAMIC) {
+    // además del HTML: los datos del sitio, los módulos de página y el índice del buscador
+    const html = (await get(app, '/guia/inicio')).body;
+    const extra = ['/_site/search.json', '/_site/p/guia/inicio.js', /src="(\/_site\/boot\.[\w-]+\.js)"/.exec(html)[1]];
+    for (const u of extra) {
+      const r = await get(app, u);
+      assert.equal(r.statusCode, 200, u);
+      for (const needle of [P, P.slice(1), '/api/']) assert.ok(!r.rawPayload.toString('utf8').includes(needle), `${u}: ${needle}`);
+    }
+    console.log(`# rastreo dinámico: ${seen.size + extra.length} URL, 0 apariciones de la ruta del panel`);
+  }
   // sin sitio todavía: la página «se está preparando» no enlaza al panel
   const empty = await mk();
-  safeRm(SITE);
+  if (DYNAMIC) await pool.query("UPDATE pages SET status = 'draft' WHERE status = 'published'");
+  else safeRm(SITE);
   empty.portal.ctx.frontend.refresh();
+  empty.portal.ctx.siteRuntime?.engine?.invalidate({});
   const prep = await get(empty, '/');
   assert.equal(prep.statusCode, 503);
   assert.doesNotMatch(prep.body, /admin|zz-secreto|\/api\//i);
+  if (DYNAMIC) {
+    await pool.query("UPDATE pages SET status = 'published'");
+    for (const a of apps) {
+      a.portal.ctx.frontend.refresh();
+      a.portal.ctx.siteRuntime?.engine?.invalidate({});
+    }
+  }
 });
 
 test('PORTAL_ADMIN_PATH: valores no válidos y colisión con una página publicada impiden arrancar', async () => {

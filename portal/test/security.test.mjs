@@ -18,6 +18,9 @@ process.env.DATABASE_URL = TEST_URL;
 process.env.PORTAL_ADMIN_USER = 'admin_seg';
 process.env.PORTAL_ADMIN_PASSWORD = 'Clave-de-prueba-1';
 process.env.PORTAL_SITE_AUTO = 'off';
+// Se ejecuta en los dos modos: estático aquí y dinámico desde security.dynamic.test.mjs.
+const DYNAMIC = process.env.PORTAL_TEST_RENDER_MODE === 'dynamic';
+process.env.PORTAL_RENDER_MODE = DYNAMIC ? 'dynamic' : 'static';
 process.env.PORTAL_ALLOW_INTERNAL_SETTINGS = '1';
 const RUN = path.join(PORTAL_ROOT, 'work-test', 'security-test');
 process.env.PORTAL_WORK_DIR = path.join(RUN, 'work');
@@ -72,6 +75,12 @@ before(async () => {
   write(WEB, 'assets/index-AbC12345.js', 'console.log(1)');
   pool = new pg.Pool({ connectionString: TEST_URL });
   await resetTestDb(pool);
+  if (DYNAMIC) {
+    (await import('./helpers/theme.mjs')).ensureTheme();
+    await pool.query(`INSERT INTO pages (route, file_path, seccion, title, status, body, frontmatter) VALUES
+      ('/', 'index.mdx', 'raiz', 'Inicio', 'published', '# Inicio\n\nPortada', '{"title":"Inicio"}'),
+      ('/guia/inicio', 'guia/inicio.mdx', 'guia', 'Guía', 'published', '# Guía\n\nTexto', '{"title":"Guía"}')`);
+  }
   app = await mk({}, {
     onRoute: (r) => {
       const role = [].concat(r.preHandler || []).map((f) => f.minRole).find(Boolean);
@@ -294,6 +303,39 @@ test('límites: cuerpo > 5 MB → 413; login > 16 KB → 413; el contenido publi
   assert.equal(val.json().ok, false);
   const menu = await req('PUT', '/api/structure/guia-sidebar', { cookie: cookies.editor, payload: { data: [{ items: [{ text: 'x', link: 'javascript:alert(1)' }] }] } });
   assert.equal(menu.statusCode, 400);
+});
+
+test('manual dinámico: rutas públicas propias (/_site/*, /assets/*) sin trucos de ruta, sin datos internos y con las cabeceras del manual', { skip: !DYNAMIC && 'solo en modo dinámico' }, async () => {
+  const html = (await req('GET', '/guia/inicio')).body;
+  const boot = /src="(\/_site\/boot\.[\w-]+\.js)"/.exec(html)[1];
+  for (const u of ['/_site/search.json', '/_site/p/guia/inicio.js', '/_site/p/index.js', boot]) {
+    const r = await req('GET', u);
+    assert.equal(r.statusCode, 200, u);
+    assert.equal(r.headers['x-content-type-options'], 'nosniff', u);
+    assert.match(r.headers['content-security-policy'], /frame-ancestors 'self'/, u);
+    assert.equal(r.headers['access-control-allow-origin'], undefined, u);
+    // ni el frontmatter interno ni rutas o credenciales del servidor
+    assert.doesNotMatch(r.body, /DATABASE_URL|postgres:\/\/|[A-Z]:\\\\|\/portal\/server|"codigo"|"funcionalidades"|"sinonimos"/, u);
+  }
+  const tricks = [
+    '/_site/../package.json', '/_site/%2e%2e/%2e%2e/.env', '/_site/assets/..%2f..%2fserver%2findex.mjs', '/_site/assets/../../../portal/.env',
+    '/_site/p/../../.env.js', '/_site/p/%2e%2e/%2e%2e/server/auth.js', '/_site/boot.../../x.js', '/_site/boot.%00.js', '/_site/.vite/manifest.json',
+    '/_site/server/entry-server.js', '/_site/client/.vite/manifest.json', '/_site/assets/', '/_site/p/', '/_site/search.json/../../.env',
+    '/assets/../../.env', '/assets/%2e%2e/package.json', '/assets/imgs/../../../portal/.env', '/assets/tours/../../.env', '/assets/tours/x.json.bak',
+    '/favicon.ico/../../.env', '/_site/p/guia/inicio.js~', '/_site/p/guia/inicio.js.bak',
+  ];
+  for (const t of tricks) {
+    let r;
+    try {
+      r = await req('GET', t);
+    } catch {
+      continue;
+    }
+    assert.ok([400, 404].includes(r.statusCode), `${t} → ${r.statusCode}`);
+    assert.doesNotMatch(r.body, /DATABASE_URL|secreto|"dependencies"|import .* from|export \{/, t);
+  }
+  // métodos que escriben sobre las rutas públicas: no existen
+  for (const m of ['POST', 'PUT', 'DELETE']) assert.equal((await req(m, '/_site/search.json', { payload: {} })).statusCode, 404, m);
 });
 
 test('npm audit: sin vulnerabilidades altas/críticas sin justificar (requiere red; PORTAL_TEST_NPM_AUDIT=1)', { skip: process.env.PORTAL_TEST_NPM_AUDIT !== '1' && 'sin PORTAL_TEST_NPM_AUDIT=1 (ver npm run security:scan -- --audit)' }, async () => {

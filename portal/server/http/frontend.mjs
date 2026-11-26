@@ -1,10 +1,15 @@
 // Todo lo que no es la API, en el mismo puerto que la API (sustituye al Nginx del contenedor antiguo):
-//   /            manual público generado (portal/data/site, o PORTAL_DATA_DIR/site), con URLs limpias, 404 propio,
-//                caché, ETag y cabeceras de seguridad equivalentes a las del nginx.conf anterior.
+//   /            manual público, con URLs limpias, 404 propio (estado 404), caché, ETag/304, compresión y cabeceras
+//                de seguridad equivalentes a las del nginx.conf anterior. Dos modos (PORTAL_RENDER_MODE):
+//                · dynamic (def.): cada página se dibuja al pedirla desde la BD (portal/site/engine.mjs) y se guarda en
+//                  memoria; guardar en el panel = visible en la siguiente petición. Nada en disco.
+//                  Rutas propias bajo la base: _site/boot.<hash>.js (datos del sitio), _site/p/<ruta>.js (módulo de
+//                  cada página), _site/search.json (buscador), _site/assets/* (tema compilado), assets/* (imágenes
+//                  y tours desde la BD) e iconos del tema (favicon, manifiesto, imagen social).
+//                · static: sitio generado por Rspress en portal/data/site (o PORTAL_DATA_DIR/site), servido desde la
+//                  carpeta actual (el publicador la reemplaza de forma atómica) con la base con la que se generó.
 //   /admin/      panel (SPA compilada en portal/web/dist con base /admin/); /admin → 301 /admin/.
 //   /healthz     estado para el healthcheck del contenedor (público, sin datos sensibles).
-// El sitio se sirve siempre desde la carpeta actual (el publicador la reemplaza de forma atómica) y con la base con
-// la que se generó (site-meta.json): un sitio nuevo o una base nueva se ven sin reiniciar.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -12,6 +17,7 @@ import path from 'node:path';
 import staticPlugin from '@fastify/static';
 import { opsPaths, siteBaseError, getSiteBase, DEFAULT_BASE } from '../ops/publish.mjs';
 import { requestPath } from '../auth.mjs';
+import { PORTAL_ROOT } from '../env.mjs';
 import { registerSeoRoutes } from './seo.mjs';
 import { HIDDEN_404_URL } from './adminPath.mjs';
 
@@ -174,6 +180,23 @@ export const preparingPage = ({ adminLink = true } = {}) =>
     refresh: 30,
   });
 
+/** Modo dinámico sin tema compilado: aviso público sin detalles internos (el detalle va al registro y al panel). */
+export const themeMissingPage = () =>
+  simplePage({
+    title: 'El manual no está disponible',
+    heading: 'El manual no está disponible en este momento',
+    text: 'Falta preparar el aspecto del manual en este servidor. Vuelva a intentarlo en unos minutos; esta página se recarga sola.',
+    refresh: 60,
+  });
+
+const unavailablePage = () =>
+  simplePage({
+    title: 'El manual no está disponible',
+    heading: 'El manual no está disponible en este momento',
+    text: 'No se pudo preparar esta página. Vuelva a intentarlo en unos segundos.',
+    refresh: 30,
+  });
+
 const forbiddenPage = () =>
   simplePage({
     title: 'Acceso no permitido',
@@ -247,12 +270,15 @@ export function registerAdminGate(app, config) {
  * Registra /healthz, /admin y el sitio. `ctx` aporta `db` y `getSetting`. Devuelve `{ currentBase, siteExists }`.
  * Opciones: `webDist` (carpeta de la SPA), `adminEnabled`.
  */
-export async function registerFrontend(app, ctx, { webDist, adminEnabled = true, healthTimeoutMs = 2000 } = {}) {
+export async function registerFrontend(app, ctx, { webDist, adminEnabled = true, healthTimeoutMs = 2000, site = null } = {}) {
   const adminPath = ctx.config?.adminPath || '/admin';
   const hidden = ctx.config?.hideAdmin === true;
+  // Modo dinámico: `site` es ops/site-dynamic.mjs (motor en site.engine; null si falta el tema compilado).
+  const dynamic = site?.mode === 'dynamic';
   // reply.sendFile(rel, root): ETag, Last-Modified, 304, Range y protección de rutas del módulo `send`.
-  fs.mkdirSync(opsPaths().dataSite, { recursive: true });
-  await app.register(staticPlugin, { root: opsPaths().dataSite, serve: false, decorateReply: true });
+  // En dinámico no se crea ni se lee ninguna carpeta del sitio (solo se usa para los archivos del panel).
+  if (!dynamic) fs.mkdirSync(opsPaths().dataSite, { recursive: true });
+  await app.register(staticPlugin, { root: dynamic ? PORTAL_ROOT : opsPaths().dataSite, serve: false, decorateReply: true });
 
   // Cabeceras de seguridad en todas las respuestas (como `add_header … always`).
   app.addHook('onSend', async (request, reply, payload) => {
@@ -294,6 +320,22 @@ export async function registerFrontend(app, ctx, { webDist, adminEnabled = true,
         .catch(() => {});
     }
     if (now - cache.at < TTL) return cache;
+    if (dynamic) {
+      // Base del ajuste (sin reiniciar: el motor repinta con la nueva) y «hay páginas publicadas».
+      const eng = site.engine;
+      let exists = false;
+      if (eng) {
+        eng.setBase(settingBase);
+        try {
+          await eng.ensureFresh();
+          exists = eng.hasPages();
+        } catch {
+          exists = false;
+        }
+      }
+      cache = { at: Date.now(), exists, base: settingBase, root: null };
+      return cache;
+    }
     const { dataSite, siteMeta } = opsPaths();
     const exists = !!(await fileStat(path.join(dataSite, 'index.html')));
     let base = settingBase;
@@ -331,9 +373,10 @@ export async function registerFrontend(app, ctx, { webDist, adminEnabled = true,
     } finally {
       clearTimeout(timer);
     }
-    const site = (await state()).exists;
+    // site: hay sitio que servir (estático: index.html generado; dinámico: tema compilado y páginas publicadas).
+    const siteOk = (await state()).exists;
     reply.header('cache-control', 'no-store');
-    return reply.code(db ? 200 : 503).send({ ok: db, db, site });
+    return reply.code(db ? 200 : 503).send({ ok: db, db, site: siteOk });
   });
 
   // ── /admin (SPA) ──
@@ -365,8 +408,119 @@ export async function registerFrontend(app, ctx, { webDist, adminEnabled = true,
     return idxCache;
   }
 
+  // ── Sitio dinámico ──
+  const etagMatches = (request, etag) =>
+    String(request.headers['if-none-match'] || '')
+      .split(',')
+      .map(s => s.trim().replace(/^W\//, ''))
+      .includes(etag);
+  const acceptsBr = request =>
+    String(request.headers['accept-encoding'] || '')
+      .split(',')
+      .some(t => {
+        const [name, ...params] = t.trim().toLowerCase().split(';');
+        const q = params.map(x => /^\s*q\s*=\s*([\d.]+)\s*$/.exec(x)?.[1]).find(Boolean);
+        return name.trim() === 'br' && (q === undefined || Number(q) > 0);
+      });
+  /** Respuesta con ETag y 304 (If-None-Match). HEAD: solo cabeceras. */
+  function sendTagged(request, reply, { body, type, etag, cache = CACHE_HTML, status = 200 }) {
+    reply.code(status).header('etag', etag).header('cache-control', cache).type(type);
+    if (status === 200 && etagMatches(request, etag)) return reply.code(304).send();
+    return reply.send(request.method === 'HEAD' ? '' : body);
+  }
+  /** Documento HTML del motor: brotli ya comprimido en la caché si el cliente lo acepta; si no, texto (gzip lo pone el plugin). */
+  function sendPage(request, reply, r) {
+    reply.code(r.status).header('etag', r.etag).header('cache-control', CACHE_HTML).header('vary', 'accept-encoding').type('text/html; charset=utf-8');
+    if (r.status === 200 && etagMatches(request, r.etag)) return reply.code(304).send();
+    if (request.method === 'HEAD') return reply.send('');
+    if (acceptsBr(request)) return reply.header('content-encoding', 'br').send(r.br);
+    return reply.send(r.html);
+  }
+  const RASTER = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif', 'image/avif']);
+  async function dynamicNotFound(request, reply) {
+    const eng = site.engine;
+    if (!eng) return reply.code(404).type('text/html; charset=utf-8').header('cache-control', CACHE_HTML).send(notFoundPage());
+    return sendPage(request, reply, await eng.renderRoute('/', { notFound: true }));
+  }
+  async function sendDynamic(request, reply, p) {
+    const eng = site.engine;
+    if (!eng) {
+      return reply.code(503).header('retry-after', '60').header('x-robots-tag', 'noindex, nofollow').header('cache-control', 'no-store').type('text/html; charset=utf-8').send(themeMissingPage());
+    }
+    const st = await state();
+    const base = st.base;
+    const q = request.url.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
+    let sub;
+    if (base === '/') {
+      if (/^\/manual(\/|$)/.test(p)) return reply.redirect((p.slice('/manual'.length) || '/') + q, 301);
+      sub = p;
+    } else {
+      const pre = base.replace(/\/$/, '');
+      if (p === pre) return reply.redirect(base + q, 301);
+      if (!p.startsWith(base)) {
+        if (p === '/') return reply.redirect(base + q, 302);
+        return st.exists ? dynamicNotFound(request, reply) : reply.code(404).type('text/html; charset=utf-8').header('cache-control', CACHE_HTML).send(notFoundPage());
+      }
+      sub = p.slice(pre.length);
+    }
+    if (!st.exists) {
+      // Sin páginas publicadas todavía (instalación nueva): «se está preparando».
+      return reply.code(503).header('retry-after', '30').header('x-robots-tag', 'noindex, nofollow').header('cache-control', 'no-store').type('text/html; charset=utf-8').send(preparingPage({ adminLink: adminEnabled && !hidden }));
+    }
+    const rel = safeRelPath(sub);
+    if (rel === null) return dynamicNotFound(request, reply);
+    let m;
+    if (rel.startsWith('_site/')) {
+      const r = rel.slice('_site/'.length);
+      if ((m = /^boot\.([\w-]{8,32})\.js$/.exec(r))) {
+        const b = eng.bootScript(m[1]);
+        return b ? sendTagged(request, reply, { body: b.code, type: 'text/javascript; charset=utf-8', etag: b.etag, cache: CACHE_IMMUTABLE }) : dynamicNotFound(request, reply);
+      }
+      if (r === 'search.json') {
+        const s = await eng.searchIndex();
+        return sendTagged(request, reply, { body: s.json, type: 'application/json; charset=utf-8', etag: s.etag });
+      }
+      if ((m = /^p(\/[\w/.~-]*)\.js$/.exec(r))) {
+        const route = m[1].endsWith('/index') ? m[1].slice(0, -'index'.length) : m[1];
+        const mod = await eng.pageModule(route);
+        return mod ? sendTagged(request, reply, { body: mod.code, type: 'text/javascript; charset=utf-8', etag: mod.etag }) : dynamicNotFound(request, reply);
+      }
+      if ((m = /^assets\/([\w.-]+)$/.exec(r))) {
+        const a = eng.themeAsset(m[1]);
+        return a ? sendTagged(request, reply, { body: a.body, type: a.type, etag: a.etag, cache: CACHE_IMMUTABLE }) : dynamicNotFound(request, reply);
+      }
+      return dynamicNotFound(request, reply);
+    }
+    if (rel.startsWith('assets/')) {
+      const r = rel.slice('assets/'.length);
+      if ((m = /^tours\/([a-z0-9][a-z0-9-]*)\.json$/.exec(r))) {
+        const t = await eng.tour(m[1]);
+        return t ? sendTagged(request, reply, { body: t.body, type: t.type, etag: t.etag, cache: CACHE_HTML }) : dynamicNotFound(request, reply);
+      }
+      const a = r && !r.endsWith('/') ? await eng.asset(r) : null;
+      if (!a || !RASTER.has(String(a.type).toLowerCase())) return dynamicNotFound(request, reply);
+      return sendTagged(request, reply, { body: a.body, type: a.type, etag: a.etag, cache: CACHE_SHORT });
+    }
+    if (rel && !rel.includes('/')) {
+      const b = eng.brandFile(rel);
+      if (b) return sendTagged(request, reply, { body: b.body, type: b.type, etag: b.etag, cache: CACHE_SHORT });
+    }
+    // Página del manual (o el 404 del manual, con estado 404, si la ruta no existe).
+    const r = await eng.renderRoute('/' + rel);
+    return sendPage(request, reply, r);
+  }
+  async function sendDynamicSafe(request, reply, p) {
+    try {
+      return await sendDynamic(request, reply, p);
+    } catch (e) {
+      console.error('[portal] Manual dinámico:', e.message);
+      return reply.code(503).header('retry-after', '30').header('cache-control', 'no-store').type('text/html; charset=utf-8').send(unavailablePage());
+    }
+  }
+
   // ── Sitio ──
   async function sendSite(request, reply, p) {
+    if (dynamic) return sendDynamicSafe(request, reply, p);
     const st = await state();
     const base = st.base;
     if (!st.exists) {
@@ -443,6 +597,7 @@ export async function registerFrontend(app, ctx, { webDist, adminEnabled = true,
   });
 
   return {
+    mode: dynamic ? 'dynamic' : 'static',
     currentBase: () => cache.base ?? settingBase,
     siteExists: async () => (await state()).exists,
     refresh,

@@ -44,8 +44,18 @@
 //   PORTAL_WORK_DIR          Carpeta de trabajo de las construcciones (def. portal/work).
 //   PORTAL_DATA_DIR          Datos: sitio publicado (site/), site-meta.json y respaldos (def. portal/data).
 //   PORTAL_RESTART_MODE      Valor por defecto del ajuste restart_mode: exit (def.; Docker/pm2 rearrancan) o respawn.
-//   PORTAL_SITE_AUTO         off desactiva las reconstrucciones automáticas en este proceso (pruebas).
-//   PORTAL_SITE_WATCH_S      Cada cuántos segundos se comprueba si la BD cambió fuera del servidor (def. 45; 0 = no).
+//
+//  Manual público (portal/site/, ver portal/DEPLOY.md)
+//   PORTAL_RENDER_MODE       dynamic (def.): cada página se dibuja al pedirla desde la BD y se guarda en memoria;
+//                            guardar en el panel = visible al instante; nada se escribe en disco. Necesita el tema
+//                            compilado (npm run site:build; en Docker lo hace el arranque). static: el flujo anterior
+//                            (build de Rspress en <PORTAL_DATA_DIR>/site tras cada cambio; alternativa temporal).
+//   PORTAL_SITE_CACHE_MB     Memoria máxima de la caché del manual dinámico (HTML + módulos compilados), def. 256.
+//   PORTAL_SITE_WARMUP       lazy (def.: portada, secciones y las más visitadas) | all (compila todas al arrancar).
+//   PORTAL_SITE_COMPILER     process (def.: proceso hijo con el modelo de permisos de Node) | thread | inline.
+//   PORTAL_SITE_COMPILE_TIMEOUT_S  Tiempo máximo de compilación de una página (def. 30).
+//   PORTAL_SITE_AUTO         (static) off desactiva las reconstrucciones automáticas en este proceso (pruebas).
+//   PORTAL_SITE_WATCH_S      (static) Cada cuántos segundos se comprueba si la BD cambió fuera del servidor (def. 45; 0 = no).
 //   PG_DUMP_PATH             Ruta de pg_dump (pg_restore se busca al lado). Sin definir: pg_dump/pg_restore del PATH.
 //   PORTAL_NPM_CLI           Ruta de npm-cli.js si no se encuentra sola (junto a Node, npm_execpath o, en Linux, npm del PATH).
 //   PORTAL_LOG_LEVEL         Nivel del log de Fastify (def. warn).
@@ -206,8 +216,15 @@ export async function buildApp({ databaseUrl, logger = false, config: overrides 
 
   const ctx = { pool, db, tx, requireRole, audit, repoRoot: REPO_ROOT, getSetting, sync: null, databaseUrl: databaseUrl || process.env.DATABASE_URL, config, auth };
   if (watchSite !== undefined) ctx.watchSite = watchSite;
+  // Manual dinámico (PORTAL_RENDER_MODE=dynamic, def.): motor SSR en memoria; OPS lo usa como ctx.site.
+  if (config.renderMode !== 'static') {
+    const { createDynamicSite } = await import('./ops/site-dynamic.mjs');
+    // config.siteEngineFactory: solo pruebas (simular un motor o la falta del tema compilado).
+    ctx.siteRuntime = await createDynamicSite({ ctx, logger: app.log, warmup: config.siteWarmup, cacheMb: config.siteCacheMb, cleanup: config.siteCleanup !== false, createEngine: config.siteEngineFactory ?? null });
+    app.addHook('onClose', async () => ctx.siteRuntime?.close());
+  }
   // El sitio, el panel y /healthz (antes de OPS: OPS usa ctx.servedBase).
-  const frontend = await registerFrontend(app, ctx, { webDist: config.webDist, adminEnabled: config.adminEnabled });
+  const frontend = await registerFrontend(app, ctx, { webDist: config.webDist, adminEnabled: config.adminEnabled, site: ctx.siteRuntime ?? null });
   ctx.servedBase = frontend.currentBase;
   ctx.frontend = frontend;
 
