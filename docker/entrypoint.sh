@@ -79,17 +79,19 @@ run_prefixed() { # run_prefixed <dir> <prefijo> <orden...>  (conserva el código
 # npm ci solo si cambió el package-lock.json o faltan los módulos (marcador con hash en el volumen)
 ensure_deps() { # ensure_deps <dir> <nombre>
   local dir="$1" name="$2" mark="$STATE/deps-$2.sha" cur
-  cur="$(sha "$dir/package-lock.json")-$(sha "$dir/package.json")-$(node -v)"
+  # `-dev`: se instalan también las dependencias de desarrollo (vite, typescript, tailwind… compilan el panel). Cambiar este
+  # sufijo invalida las marcas de instalaciones anteriores hechas solo con las de producción.
+  cur="$(sha "$dir/package-lock.json")-$(sha "$dir/package.json")-$(node -v)-dev"
   if [ -f "$mark" ] && [ "$(cat "$mark")" = "$cur" ] && [ -d "$dir/node_modules/.bin" ]; then
     log "Dependencias de $name al día (sin cambios en package-lock.json)."; return
   fi
   log "Instalando dependencias de $name (npm ci)... puede tardar varios minutos."
   rm -f "$mark"
-  if ! run_prefixed "$dir" "npm $name" npm ci --no-audit --no-fund; then
+  if ! run_prefixed "$dir" "npm $name" npm ci --include=dev --no-audit --no-fund; then
     # Un volumen montado en node_modules no se puede borrar entero: se vacía su contenido y se reintenta una vez.
     log "npm ci falló en $name; se vacía node_modules y se reintenta una vez."
     find "$dir/node_modules" -mindepth 1 -delete 2>/dev/null || true
-    run_prefixed "$dir" "npm $name" npm ci --no-audit --no-fund || die "npm ci falló en $name. Revise la salida anterior."
+    run_prefixed "$dir" "npm $name" npm ci --include=dev --no-audit --no-fund || die "npm ci falló en $name. Revise la salida anterior."
   fi
   echo "$cur" > "$mark"
   log "Dependencias de $name instaladas."
@@ -108,13 +110,19 @@ if [ -f portal/web/dist/index.html ] && [ -f "$web_mark" ] && [ "$(cat "$web_mar
 else
   log "Compilando el panel (portal/web)..."
   rm -f "$web_mark"
-  run_prefixed portal/web panel npm run build || die "La compilación del panel falló. Revise la salida anterior."
-  echo "$web_cur" > "$web_mark"
-  log "Panel compilado."
+  if run_prefixed portal/web panel npm run build; then
+    echo "$web_cur" > "$web_mark"
+    log "Panel compilado."
+  elif [ -f portal/web/dist/index.html ]; then
+    log "AVISO: la compilación del panel falló; se conserva la versión anterior. Revise las líneas [panel] de arriba."
+  else
+    log "Para ver el error completo: docker compose logs ispmax-manual | grep -B40 'panel falló'"
+    die "La compilación del panel falló y no hay una versión anterior. Revise la salida anterior."
+  fi
 fi
 
 log "Aplicando el esquema de la base de datos..."
 node portal/server/migrate.mjs || die "La migración del esquema falló."
 
-log "Arrancando el portal en ${PORTAL_HOST:-0.0.0.0}:${PORTAL_PORT:-8387} (manual en /, panel en /admin/, API en /api)."
+log "Arrancando el portal en ${PORTAL_HOST:-0.0.0.0}:${PORTAL_PORT:-8387} (manual en /; el panel y su API, bajo la ruta de PORTAL_ADMIN_PATH)."
 exec "$@"
