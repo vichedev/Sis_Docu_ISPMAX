@@ -5,7 +5,7 @@
  * editores) y «En esta página» (esquema + propiedades). Por debajo de 1280 px el panel va en un Sheet.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, CloudUpload, Copy, Ellipsis, ExternalLink, FilePen, FolderInput, LayoutGrid, ListTree, LoaderCircle, PanelRightClose, PanelRightOpen, Save, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, CloudUpload, Copy, Ellipsis, ExternalLink, FilePen, FolderInput, LayoutGrid, ListTree, LoaderCircle, PanelRightClose, PanelRightOpen, Save, Settings, Sparkles, Trash2 } from 'lucide-react';
 import { Badge, Button, Callout, ConfirmDialog, Dialog, DropdownMenu, ErrorState, IconButton, ImagePicker, Sheet, Spinner, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger, Textarea, useToast } from '@/components/ui';
 import { useBreadcrumbs } from '@/components/layout/Page';
 import { api, ApiError, type Asset, type Page, type Problem } from '@/lib/api';
@@ -17,7 +17,7 @@ import { figureSnippet } from '@/lib/assets';
 import { useAsync, useDebounced, useHotkeys, useLocalStorage, useMediaQuery, useUnsavedChanges } from '@/lib/hooks';
 import type { OutlineItem } from '@/lib/mdx';
 import { outline as blockOutline, parseMdx } from '@/lib/blocks/index.ts';
-import { SECCIONES, contentChanged, fmtDate, pushRecent, relTime, slugify } from '@/lib/util';
+import { SECCIONES, contentChanged, fmtDate, forgetRecent, go, pushRecent, relTime, slugify } from '@/lib/util';
 import { cn } from '@/lib/cn';
 import type { usePageActions } from '@/features/pages/pageActions';
 import { BlockEditor, BlockPreview, type BlockEditorHandle } from './BlockEditor';
@@ -27,6 +27,9 @@ import { OutlinePanel, type PageForm } from './OutlinePanel';
 import { RevisionsTab } from './RevisionsTab';
 import { BlockPalette } from './palette/BlockPalette';
 import { siteHref } from '@/lib/siteHref';
+import { AiAssistantSheet } from '@/features/ai/AiAssistantSheet';
+import { AiDraftDialog } from '@/features/ai/AiDraftDialog';
+import { useAiStatus } from '@/features/ai/useAiStatus';
 
 type Side = 'blocks' | 'outline';
 
@@ -69,6 +72,9 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
   const [side, setSide] = useLocalStorage<Side>('portal-editor-side', 'blocks');
   const sideTab: Side = canEdit ? side : 'outline';
   const [target, setTarget] = useState<string | null>(null);
+  const ai = useAiStatus();
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiDraftOpen, setAiDraftOpen] = useState(false);
   /** Paleta: inserta en el lienzo (si se estaba en otra pestaña, primero vuelve al lienzo para que lea el texto actual). */
   const insertFromPalette = (cmd: string) => {
     setPanelSheet(false);
@@ -87,7 +93,7 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
   useEffect(() => {
     if (!page) return;
     const f = toForm(page); setForm(f); setBase(f); setFolder(imageFolder(page));
-    pushRecent({ id: page.id, title: page.title, route: page.route });
+    if (page.deleted_at) forgetRecent(page.id); else pushRecent({ id: page.id, title: page.title, route: page.route });
   }, [page]);
 
   const crumbs = useMemo(() => {
@@ -195,6 +201,22 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
 
   if (loading && !page) return <div className="flex-1 p-8"><Spinner block /></div>;
   if (error || !page || !form) return <div className="flex-1 p-8"><ErrorState error={error} onRetry={reload} /></div>;
+  if (page.deleted_at) {
+    return (
+      <div className="flex flex-1 items-start justify-center p-8">
+        <div className="w-full max-w-[520px] rounded-lg border border-line bg-subtle p-6">
+          <h2 className="text-lg font-semibold text-ink">Esta página está eliminada</h2>
+          <p className="mt-1 text-sm text-ink-2"><b>{page.title}</b> ya no está en el manual ni se puede editar. Puede recuperarla o volver al árbol.</p>
+          <div className="mt-4 flex gap-2">
+            {canEdit && <Button variant="primary" onClick={async () => {
+              try { await api.restorePage(page.id); contentChanged(); toast('Página recuperada'); reload(); } catch (e) { toast(errText(e), 'error'); }
+            }}>Recuperar página</Button>}
+            <Button onClick={() => go('/contenido')}>Volver</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const errs = problems.filter((p) => p.level === 'error').length;
   const warns = problems.length - errs;
 
@@ -230,10 +252,18 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
               { label: 'Duplicar', icon: <Copy size={16} />, onSelect: () => void actions.duplicate(ref) },
               ...(!generated ? [{ label: 'Mover o cambiar dirección…', icon: <FolderInput size={16} />, onSelect: () => actions.move(ref) }] : []),
               ...(page.status === 'published' && page.seccion !== 'raiz' && !generated ? [{ label: 'Pasar a borrador…', icon: <FilePen size={16} />, onSelect: () => setConfirmUnpub(true) }] : []),
+              { label: 'Crear página con IA…', icon: <Sparkles size={16} />, disabled: ai.state.disabled, onSelect: () => setAiDraftOpen(true) },
               { separator: true } as const,
               ...(!generated ? [{ label: 'Eliminar…', icon: <Trash2 size={16} />, danger: true, onSelect: () => actions.remove(ref) }] : []),
             ] : [{ label: 'Solo lectura: rol de lector', disabled: true }]),
           ]} trigger={<IconButton label="Más acciones" icon={<Ellipsis size={16} />} />} />
+          {canEdit && blocksSafe && (
+            <span className="inline-flex items-center gap-1.5" title={ai.state.help ?? 'Asistente de IA: reescribir, acortar, expandir o crear pasos'}>
+              <Button variant="ghost" size="sm" disabled={ai.state.disabled} onClick={() => setAiOpen(true)} data-testid="open-ai" aria-describedby={ai.state.help ? 'ai-help' : undefined}><Sparkles size={15} /><span className="max-md:hidden">Asistente IA</span></Button>
+              {ai.state.help && <span id="ai-help" className="text-xs text-ink-3 max-2xl:sr-only">{ai.state.help}</span>}
+              {ai.state.settingsLink && <Button asChild variant="ghost" size="icon-sm"><a href="#/ajustes/ia" aria-label="Abrir Ajustes: asistente de IA" title="Configura la clave de IA en Ajustes"><Settings size={14} /></a></Button>}
+            </span>
+          )}
           {canEdit && blocksSafe && (
             <Button variant="ghost" size="sm" onClick={openPalette} aria-pressed={wide ? panel && sideTab === 'blocks' : undefined} data-testid="open-palette"
               title="Paleta de bloques: título, imagen, tour, aviso, tabla…" aria-label="Añadir bloque"><LayoutGrid size={15} /><span className="max-md:hidden">Añadir bloque</span></Button>
@@ -332,6 +362,8 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
         </ul>
         {!isAdmin && <p className="mt-3 text-sm text-ink-3">Solo una persona administradora puede publicar con errores.</p>}
       </Dialog>
+      {canEdit && <AiAssistantSheet open={aiOpen} onOpenChange={setAiOpen} editor={blocksRef} page={{ id: page.id, title: form.title || page.title, route: page.route, seccion: page.seccion, status: page.status }} getBody={() => form.body} onApplyBody={(b) => set('body', b)} model={ai.status?.model} />}
+      {canAct && <AiDraftDialog open={aiDraftOpen} onOpenChange={setAiDraftOpen} />}
       <ImagePicker open={!!picker} onOpenChange={(o) => { if (!o) { picker?.(null); setPicker(null); } }} onSelect={(a) => { picker?.(a); setPicker(null); }} />
       <Dialog open={conflict} onOpenChange={setConflict} title="Otra persona guardó esta página" footer={<>
         <Button className="mr-auto" onClick={() => setConflict(false)}>Seguir editando</Button>

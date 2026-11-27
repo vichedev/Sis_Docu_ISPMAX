@@ -285,7 +285,7 @@ Lógica pura en `homeModel.ts` (sin imports; `node --test test/home.test.mjs`). 
 
 ## Huecos preparados
 
-- **Árbol de contenido** (`features/structure/ContentTree.tsx`): primer nivel = menú superior del manual (Guía · Quiero hacer… · Tengo un problema · Preguntas · Referencia · Soporte), en acordeón (una abierta; se recuerda en `localStorage`). Dentro, la barra lateral real: «Portada de la sección» fija, encabezados de grupo en versalitas (11 px, `tracking-[0.07em]`, `text-ink-3`) con contador, ítems con su texto/emoji (`menu`) y sangría de 14 px por nivel. «Referencia» añade el bloque «Menú desplegable» (7 enlaces, no se reordenan: salen de `rspress.config.ts`) y las barras de `/referencia` y `/conceptos`; «Soporte» es informativo (enlace externo). Cada grupo: «+» crear página, menú (renombrar, eliminar si está vacío; subir/bajar solo en la Guía); «+ Nuevo grupo» al final de cada barra (se guarda al crearlo). El orden de los grupos fuera de la Guía lo fija el servidor (como `build-nav`). Filtro con contexto «Sección › Grupo».
+- **Árbol de contenido** (`features/structure/ContentTree.tsx`): primer nivel = menú superior del manual (Guía · Quiero hacer… · Tengo un problema · Preguntas · Referencia · Soporte), en acordeón (una abierta; se recuerda en `localStorage`). Dentro, la barra lateral real: «Portada de la sección» fija, encabezados de grupo en versalitas (11 px, `tracking-[0.07em]`, `text-ink-3`) con contador, ítems con su texto/emoji (`menu`) y sangría de 14 px por nivel. «Referencia» añade el bloque «Menú desplegable» (7 enlaces, no se reordenan: salen de `rspress.config.ts`) y las barras de `/referencia` y `/conceptos`; «Soporte» es informativo (enlace externo). Cada grupo: «+» crear página, menú (renombrar, eliminar si está vacío; subir/bajar solo en la Guía); «+ Nuevo grupo» al final de cada barra (se guarda al crearlo). El orden de los grupos fuera de la Guía lo fija el servidor (como `build-nav`). Un grupo es una entidad: si se queda sin páginas sigue en el árbol con su cabecera, el recuento 0 y la nota discreta «Sin páginas…»; «Eliminar grupo» solo se habilita vacío (con páginas el ítem indica cuántas tiene) y «Renombrar grupo» llama a `PUT /api/structure/groups` (atómico; la grafía «inicio» frente a «🚀 INICIO» cuenta como el mismo grupo). Lógica pura en `features/structure/groupModel.ts`. Filtro con contexto «Sección › Grupo».
 - **Subsecciones**: el árbol envía `PUT /api/structure/order` con `nodes` anidados y `pageIds` planos (compatibilidad).
 
 ## Verificar
@@ -320,3 +320,46 @@ El panel se sirve en `/admin/` (Vite `base`), el manual en `/` y la API en `/api
 - `AccountPage` (`#/cuenta`, menú de usuario): `PasswordForm` con checklist en vivo, `TwoFactorEnroll` (contraseña → QR generado en el navegador con `qrcode` + secreto copiable → códigos de recuperación una sola vez), desactivar 2FA, sesiones activas.
 - `RestrictedPage`: pantalla completa sin menú cuando `/api/auth/me` trae `mustChangePassword`/`mustEnrollTwoFactor` o una respuesta `403` con `code` (`PASSWORD_CHANGE_REQUIRED` | `2FA_ENROLL_REQUIRED`, evento `RESTRICTED_EVENT`).
 - Usuarios: «Restablecer 2FA…». Ajustes › Seguridad: `require_2fa_for_admins`.
+
+
+## Asistente de IA (`src/features/ai`, `src/lib/api.ai.ts`)
+
+La IA **propone** y la persona **aprueba**: nada se guarda ni se publica solo. Servidor: `portal/server/routes/ai.mjs` (ver `portal/SECURITY.md` § 9).
+
+| Pieza | Qué hace |
+|---|---|
+| Botón «Asistente IA» (cabecera de `PageEditor`) | Abre `AiAssistantSheet` (Sheet derecho ancho). Deshabilitado si `GET /api/ai/status` dice `enabled:false`, con la ayuda **«Configura la clave de IA en Ajustes»** y, solo para administradores, el enlace «Abrir Ajustes» (`#/ajustes/ia`); sin revelar nada más. Aparece solo para quien puede editar |
+| `AiAssistantSheet` | Texto de origen (el bloque seleccionado del lienzo, editable, o texto pegado) → acciones rápidas (Reescribir, Acortar, Expandir, Corregir redacción, Convertir en pasos) o instrucción libre → resultado con **Antes / Después** (diferencia por líneas) y avisos → **Aplicar** / **Descartar**. Aplicar reemplaza el bloque (o inserta tras el seleccionado si el texto se editó/pegó) y lanza un toast con **Deshacer** (un paso del historial). Estados: cargando, error de límite de uso (aviso ámbar), propuesta descartada por validación (con «Reintentar»), IA no disponible (enlace a Ajustes solo admin) |
+| `BlockEditorHandle` | Añade `getSelectedBlock()`, `replaceBlock(id, mdx)`, `insertMdx(mdx)` y `undo()`; usan el motor de bloques (`parseMdx`, texto original conservado: la fidelidad 285/285 no cambia) |
+| `AiDraftDialog` («Crear con IA» en la lista de páginas y en el espacio de contenido; «Crear página con IA…» en el menú del editor) | Descripción → propuesta editable (título, tipo, descripción, sección, módulo, grupo, subsección, dirección) + vista previa del contenido con `BlockPreview` → **Crear borrador** (`POST /api/pages` y `PUT /api/pages/:id`; nace `draft`). Nunca publica |
+| Ajustes › Asistente de IA (`settings/AiSection.tsx`, admin) | Interruptor, clave (`type=password`, nunca se rellena con la guardada), modelo (lista sugerida + texto libre), **Guardar**, **Probar conexión** (llamada mínima real) y **Quitar clave**. Muestra el origen: «Clave guardada en Ajustes» / «Clave del servidor (archivo .env)» / «Sin clave» |
+| `aiModel.ts` | Lógica pura probada con `node --test test/ai.test.mjs`: estado del botón, mensajes de error, límites de entrada, diferencia antes/después y validación del formulario |
+
+Reglas: sin degradados ni emojis; solo componentes de `@/components/ui`; textos en español con verbo en infinitivo en los botones; `useAiStatus()` es la única fuente del estado (se refresca con el evento `portal:ai-config` al guardar Ajustes).
+
+
+### Asistente conversacional (fase 2: chat con herramientas)
+
+`AiAssistantSheet` es ahora **un chat** (Sheet derecho de 560 px) que sustituye al panel de «texto seleccionado»: historial de la sesión (se conserva al cerrar y reabrir; «Nueva conversación» lo vacía), caja de mensaje siempre activa (Enter envía, Mayús+Enter salta de línea), estado «Pensando…» con **Cancelar** (aborta la petición) y errores en el propio hilo (límite de uso en ámbar; clave/IA no disponible con enlace a Ajustes solo para administradores; propuesta descartada por seguridad). Vacío: aviso y chips de arranque («Crear una página en una sección», «Mejorar esta página», «¿Qué secciones hay?», «Acortar el bloque seleccionado»; los que necesitan página o bloque salen deshabilitados con ayuda). Las acciones rápidas anteriores quedan como **atajos** sobre el bloque seleccionado y dan una tarjeta antes/después.
+
+En cada turno el panel envía el historial acotado (`buildHistory`: últimos 12 mensajes y 12 000 caracteres; las notas de lo aplicado o descartado viajan como mensajes del asistente), la página abierta con su texto actual del editor (`buildContext`) y el bloque seleccionado. Servidor: `POST /api/ai/chat` (`portal/server/routes/ai.mjs`, `ai/chatTools.mjs`): bucle de herramientas de lectura (`list_outline`, `search_pages`, `read_page`) y de **propuesta** (`propose_create_page`, `propose_edit_page`, `propose_move_page`), máx. 6 pasos y 90 s; ninguna escribe en la BD.
+
+Tarjetas de propuesta (`CardShell`), cada una con **Aplicar** / **Descartar**:
+| Tipo | Vista previa | Al aplicar |
+|---|---|---|
+| Página nueva | dirección, sección › grupo, tipo (o «estructura base» si pidió plantilla), «Borrador (no se publica)», contenido con `BlockPreview` | `createDraft` (POST + PUT de páginas; nace `draft`) y botón **Abrir** |
+| Edición de la página abierta | diff antes/después del tramo cambiado | se aplica al editor **sin guardar** (solo si el texto no cambió desde la propuesta) con toast **Deshacer** |
+| Edición de otra página | diff + aviso si está publicada («se ve al instante») | `PUT /api/pages/:id` con la versión de la propuesta (409 si cambió); **Deshacer** restaura la revisión anterior |
+| Mover | origen → destino | `POST /api/pages/:id/move` (al final del destino) |
+
+Tras aplicar o descartar, el chat añade una nota («Se creó el borrador…») que se envía en los turnos siguientes. `POST /api/ai/applied` deja `ai.apply` en la auditoría. Lógica pura probada en `test/ai.test.mjs` (`aiModel.ts`, `applyActions.ts` es la única parte con llamadas).
+
+
+### Asistente: fase 3 (chat interactivo, grupos sin duplicados e historial)
+
+- **Streaming.** `streamChat` (`lib/api.ai.ts`) lee el SSE de `POST /api/ai/chat` (`stream:true`): `meta`, `activity` (pasos en vivo), `delta` (texto), `reset`, `proposal` (ya validada en el servidor), `choices`, `done` y `error`. La línea de actividad (`ActivityLine`, iconos lucide: «Consultando las secciones del manual», «Leyendo…», «Preparando la propuesta…») se resuelve con una marca al terminar; mientras no llega texto se ve un esqueleto. **Cancelar** aborta el `fetch` y el servidor corta la llamada al proveedor sin guardar nada. El hilo es una región `role="log"` con `aria-live="polite"`.
+- **Respuestas rápidas.** Si falta un dato, la IA llama a `ask_choice` y el hilo muestra botones con los valores reales (por ejemplo los grupos de la sección); un clic envía la respuesta. El turno termina ahí.
+- **Tarjeta de página nueva editable** (`CreateCard` en `AiParts.tsx`): título y **grupo del menú** siempre visibles (desplegable con los grupos EXISTENTES de la sección, «Sin grupo» y «Nuevo grupo…»); «Editar» abre sección, tipo, dirección y módulo. Un grupo nuevo exige el nombre y una casilla de confirmación, y se rechaza si el nombre normalizado ya existe (se usa el existente). Muestra el miniárbol de dónde quedará la página resaltada, la vista previa del contenido (`BlockPreview`) y **Pedir cambios** (rellena la caja con el contexto), **Descartar** y **Crear borrador**. Al crear, el servidor vuelve a resolver el grupo (`canonicalGroupFor`).
+- **Entrada.** Enter envía, Mayús+Enter salta de línea, **/** abre comandos (`/crear`, `/mejorar`, `/mover`, `/secciones`), **@** busca páginas (`api.pages`) y las añade al contexto (el servidor las relee de la BD), flecha arriba recupera el último mensaje, Esc cierra el menú y luego el panel. Cada respuesta tiene **Copiar** y la última, **Regenerar**. El texto del asistente se dibuja con `Md` (negrita, cursiva, código y listas como elementos de React; nunca `dangerouslySetInnerHTML`).
+- **Bienvenida contextual** (`contextChips`): «Escribir el primer borrador» (página casi vacía), «Revisar y mejorar la redacción» (publicada) o «Completar y pulir este borrador», más «Crear una página en una sección», «¿Qué secciones hay?» y «Acortar el bloque seleccionado» si hay selección.
+- **Historial** (`AiHistory.tsx`, botón «Historial» del panel): lista de MIS conversaciones con búsqueda, fecha corta, número de mensajes y página; abrir restaura el chat con el estado de cada propuesta (aplicada, descartada) y se puede continuar; renombrar, borrar una y **Borrar historial** (con confirmación). Servidor: `/api/ai/conversations*` (solo las del usuario), `PORTAL_AI_HISTORY_DAYS`, ver `SECURITY.md` § 9.

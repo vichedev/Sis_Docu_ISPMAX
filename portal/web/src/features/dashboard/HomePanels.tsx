@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import type { SiteStatus } from '@/lib/api.site';
 import { isLive, liveOk } from '@/lib/siteModel';
 import { useAsync } from '@/lib/hooks';
-import { ACTION_LABEL, fmtDate, recentPages, relTime, store } from '@/lib/util';
+import { ACTION_LABEL, fmtDate, relTime, store } from '@/lib/util';
+import { useRecentPages } from '@/lib/recent';
 import { cn } from '@/lib/cn';
 import { fmtDur } from '@/features/system/site';
 import { actionText, plural, shownTarget, type AttentionItem, type SectionRow } from './homeModel';
@@ -134,7 +135,7 @@ export function AttentionPanel({ items, loading, className }: { items: Attention
 /* ---------- Continuar editando ---------- */
 
 export function RecentPanel({ className, canEdit }: { className?: string; canEdit: boolean }) {
-  const recent = recentPages().slice(0, 6);
+  const recent = useRecentPages(6);
   return (
     <Panel flush className={className} title={canEdit ? 'Continuar editando' : 'Vistas hace poco'} actions={<More href="#/contenido">Páginas</More>}>
       {recent.length === 0 ? (

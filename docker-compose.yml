@@ -44,6 +44,12 @@ services:
       PORTAL_SECRET_KEY: "${PORTAL_SECRET_KEY:-}"
       PORTAL_SESSION_IDLE_H: "${PORTAL_SESSION_IDLE_H:-12}"
       PORTAL_SESSION_MAX_DAYS: "${PORTAL_SESSION_MAX_DAYS:-7}"
+      # Asistente de IA (Groq). La clave también se puede poner desde el panel (Ajustes › Asistente de IA; queda
+      # cifrada en la base de datos y manda sobre esta). Vacías = sin clave del entorno / valores por defecto.
+      GROQ_API_KEY: "${GROQ_API_KEY:-}"
+      GROQ_MODEL: "${GROQ_MODEL:-}"
+      PORTAL_AI_RATE: "${PORTAL_AI_RATE:-}"
+      PORTAL_AI_HISTORY_DAYS: "${PORTAL_AI_HISTORY_DAYS:-}"
       PORTAL_RESTART_MODE: "exit"
       # Dentro de Docker, «Actualizar el sistema» solo trae el código (git) y reinicia: las dependencias, la
       # migración y la compilación las aplica docker/entrypoint.sh al arrancar (viven en volúmenes).

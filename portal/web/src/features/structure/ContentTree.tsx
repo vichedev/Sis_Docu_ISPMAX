@@ -7,7 +7,7 @@
  * - Menú por página: abrir, añadir subpágina, duplicar, mover, eliminar. «+» en grupos y secciones crea páginas.
  * variant="sidebar" (espacio de contenido) o "full" (pantalla Estructura, con direcciones y grupos editables).
  */
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { DndContext, DragOverlay, closestCenter, type DragMoveEvent, type DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -20,6 +20,7 @@ import { cn } from '@/lib/cn';
 import { go } from '@/lib/util';
 import type { usePageActions } from '@/features/pages/pageActions';
 import type { StructureMenu, StructurePage } from '@/lib/api';
+import { EMPTY_GROUP_TEXT, deleteGroupLabel, groupConflict, renameVerdict } from './groupModel';
 import { MAX_PAGE_DEPTH, countPages, groupKey, pageKey, type CNode, type CSection, type ContentTreeState, type NodeData } from './useContentTree';
 import { siteHref } from '@/lib/siteHref';
 
@@ -145,7 +146,6 @@ function SectionTree({ section, tree, actions, activeId, full, open, setOpen, fo
     if (it.data.kind === 'group') {
       const gi = section.nodes.findIndex((g) => g.id === it.id);
       const gname = it.data.name;
-      const empty = !all.some((x) => x.parentId === it.id);
       return [
         { label: 'Crear página aquí', icon: <FilePlus size={16} />, onSelect: () => onCreate({ seccion: section.key, grupo: gname }) },
         { label: 'Renombrar grupo', icon: <Pencil size={16} />, onSelect: () => setRenaming(it.id) },
@@ -155,7 +155,7 @@ function SectionTree({ section, tree, actions, activeId, full, open, setOpen, fo
           { label: 'Bajar grupo', icon: <ArrowDown size={16} />, disabled: gi >= section.nodes.length - 1, onSelect: () => commit(moveSibling(section.nodes, it.id, 1)) },
         ] : []),
         { separator: true } as const,
-        { label: empty ? 'Eliminar grupo' : 'Eliminar grupo (solo si está vacío)', icon: <Trash2 size={16} />, danger: true, disabled: !empty, onSelect: () => void tree.deleteGroup(section.key, gname) },
+        { label: deleteGroupLabel(all.filter((x) => x.parentId === it.id).length), icon: <Trash2 size={16} />, danger: true, disabled: all.some((x) => x.parentId === it.id), onSelect: () => void tree.deleteGroup(section.key, gname) },
       ];
     }
     const pg = it.data.page;
@@ -196,7 +196,7 @@ function SectionTree({ section, tree, actions, activeId, full, open, setOpen, fo
       <SortableContext items={visible.map((i) => i.id)} strategy={verticalListSortingStrategy}>
         <div role="group" onKeyDown={onRowKey}>
           {visible.map((it) => (
-            <TreeRow key={it.id} item={it} section={section} full={full} canEdit={canEdit} dragDisabled={dragDisabled || !canEdit}
+            <Fragment key={it.id}><TreeRow item={it} section={section} full={full} canEdit={canEdit} dragDisabled={dragDisabled || !canEdit}
               depth={it.id === activeDrag && projection ? projection.depth : it.depth}
               open={isOpen(it.id)} hasChildren={it.data.kind === 'group' || hasKids(it.id)} onToggle={() => setOpen(it.id, !isOpen(it.id))}
               active={it.data.kind === 'page' && it.data.page.id === activeId} focusKey={focusKey} onFocus={() => setFocusKey(it.id)}
@@ -206,11 +206,14 @@ function SectionTree({ section, tree, actions, activeId, full, open, setOpen, fo
               renaming={renaming === it.id} count={it.data.kind === 'group' ? all.filter((x) => x.parentId === it.id).length : undefined}
               onRename={(v) => {
                 setRenaming(null);
-                const name = v?.trim();
-                if (!name || it.data.kind !== 'group' || name === it.data.name) return;
-                if (section.nodes.some((g) => g.data.kind === 'group' && g.data.name === name)) return;
-                commit(section.nodes.map((g) => (g.id === it.id ? { ...g, id: groupKey(section.key, name), data: { kind: 'group', name } } : g)));
+                if (it.data.kind !== 'group') return;
+                const verdict = renameVerdict(section.nodes.flatMap((g) => (g.data.kind === 'group' ? [g.data.name] : [])), it.data.name, v);
+                if (!verdict.ok) { if (verdict.reason === 'conflict') tree.notify(`Ya existe el grupo «${verdict.existing}» en esta sección.`); return; }
+                void tree.renameGroup(section.key, it.data.name, verdict.name); // atómico en el servidor: páginas, registro y menú
               }} />
+            {it.data.kind === 'group' && isOpen(it.id) && !all.some((x) => x.parentId === it.id) && (
+              <p className="ml-9 mt-0.5 mb-1 text-xs italic text-ink-3" data-empty-group={it.data.name}>{EMPTY_GROUP_TEXT}</p>
+            )}</Fragment>
           ))}
         </div>
       </SortableContext>
@@ -293,7 +296,7 @@ export function ContentTree({ tree, actions, activeId, variant = 'sidebar', onCr
   const secOf = (key: string) => tree.sections?.find((x) => x.key === key);
   // Entrada del menú superior a la que pertenece cada sección (Conceptos cuelga del desplegable Referencia).
   const topOf = (seccion: string) => tree.menu.find((m) => m.seccion === seccion || m.extraSecciones.includes(seccion));
-  const groupExists = !!secOf(newGroup ?? '')?.nodes.some((g) => g.data.kind === 'group' && g.data.name === groupName.trim());
+  const groupExists = !!groupConflict((secOf(newGroup ?? '')?.nodes ?? []).flatMap((g) => (g.data.kind === 'group' ? [g.data.name] : [])), groupName);
   const addGroup = async () => {
     const s = secOf(newGroup ?? '');
     const name = groupName.trim();

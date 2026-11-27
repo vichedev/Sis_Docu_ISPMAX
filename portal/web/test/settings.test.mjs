@@ -53,7 +53,7 @@ test('numberProblem y shownTitle', () => {
 });
 
 test('rutas: secciones de Ajustes y redirecciones de las antiguas', () => {
-  assert.deepEqual(SETTINGS_SECTIONS, ['general', 'manual', 'seguridad', 'sistema', 'respaldos', 'info']);
+  assert.deepEqual(SETTINGS_SECTIONS, ['general', 'manual', 'seguridad', 'ia', 'sistema', 'respaldos', 'info']);
   assert.equal(settingsSection('info'), 'info');
   assert.equal(settingsSection('git'), 'general');
   assert.equal(settingsSection(undefined), 'general');

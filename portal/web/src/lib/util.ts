@@ -87,6 +87,9 @@ export const pushRecent = (p: Omit<RecentPage, 'at'>) => {
   store.set(RECENT_KEY, [{ ...p, at: new Date().toISOString() }, ...l].slice(0, 8));
 };
 
+/** Quita una página de «Abiertas hace poco» (al eliminarla o si ya no existe). */
+export const forgetRecent = (id: number) => store.set(RECENT_KEY, recentPages().filter((x) => x.id !== id));
+
 /** Aviso global para que la barra superior refresque el contador de cambios sin publicar. */
 export const STATS_EVENT = 'portal:stats';
 export const statsChanged = () => window.dispatchEvent(new Event(STATS_EVENT));

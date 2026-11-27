@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto';
 import { PORTAL_ROOT } from '../env.mjs';
 import { backupsDir } from '../settings.mjs';
 import { httpError } from '../routes/util.mjs';
+import { GROUPS_KEY, sanitizeGroups, mergeGroups, readGroups, saveGroups, deriveGroups } from '../groupStore.mjs';
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -242,6 +243,11 @@ export async function readPackage(source) {
     fpaths.add(f.path);
   }
   for (const k of Object.keys(d.settings)) if (!CONTENT_SETTINGS.includes(k)) throw bad(`el ajuste "${k}" no es de contenido y no se admite.`);
+  // Grupos del menú (también los vacíos): { [seccion]: [nombre] }. Los paquetes anteriores no lo traen: sus grupos se derivan de las páginas al importar.
+  const sg = d.settings[GROUPS_KEY];
+  if (sg !== undefined && (!isObj(sg) || Object.values(sg).some((v) => !Array.isArray(v) || v.some((n) => typeof n !== 'string')))) {
+    throw bad('el ajuste structure_groups debe ser { sección: [nombres de grupo] }.');
+  }
   for (const r of d.revisions ?? []) {
     if (!isObj(r) || typeof r.route !== 'string' || !isObj(r.snapshot) || !Number.isInteger(r.version)) throw bad('una revisión no es válida.');
   }
@@ -340,10 +346,23 @@ export async function importPackage({ pool, source, mode = 'replace', log = () =
       const x = await c.query('INSERT INTO site_files (path, content) VALUES ($1,$2) ON CONFLICT (path) DO NOTHING', [f.path, f.content]);
       if (x.rowCount) counts.siteFiles++; else skip('siteFiles');
     }
-    for (const [k, v] of Object.entries(d.settings)) {
+    for (const [k, v0] of Object.entries(d.settings)) {
+      if (k === GROUPS_KEY) {
+        // replace: la base ya no tiene registro (se vació arriba); merge: unión con el existente (sin duplicados normalizados)
+        const incoming = sanitizeGroups(v0);
+        const cur = await readGroups(c);
+        const had = Object.keys(cur).length > 0;
+        await saveGroups(c, mergeGroups(cur, incoming));
+        if (!had && Object.keys(incoming).length) counts.settings++;
+        else if (had) skip('settings');
+        continue;
+      }
+      const v = v0;
       const x = await c.query('INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO NOTHING', [k, JSON.stringify(v)]);
       if (x.rowCount) counts.settings++; else skip('settings');
     }
+    // grupos de las páginas ya presentes (paquetes antiguos sin structure_groups): quedan registrados como entidades
+    await deriveGroups(c);
     // secuencias al máximo existente
     for (const [t, s] of [['pages', 'pages_id_seq'], ['page_revisions', 'page_revisions_id_seq'], ['assets', 'assets_id_seq'], ['tours', 'tours_id_seq']]) {
       await c.query(`SELECT setval('${s}', GREATEST((SELECT COALESCE(MAX(id), 0) FROM ${t}), 1), (SELECT COUNT(*) > 0 FROM ${t}))`);

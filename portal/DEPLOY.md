@@ -164,3 +164,16 @@ Todo este despliegue se escribió en un equipo Windows **sin Docker**. Se verifi
 - Que el servidor responda en `/`, `/admin/`, `/api`, `/healthz` con las variables `PORTAL_*` (depende de `portal/server`, que se implementa aparte) y trate como «sin definir» las variables vacías (`PORTAL_ADMIN_ALLOWED_IPS=`, `PORTAL_COOKIE_SECURE=`, `PORTAL_ALLOWED_ORIGINS=`).
 - La sustitución real del contenedor antiguo y el comportamiento de Portainer con el stack existente.
 - **Manual dinámico (2026-11-26):** el paso `npm run site:build` del `entrypoint.sh` dentro del contenedor (Vite con `NODE_ENV=production` y `npm ci --include=dev`), el proceso de compilación con `--permission` en Node 22/Alpine (en Windows con Node 24 sí se probó; si el Node no lo admite, se avisa y se usa un hilo sin entorno) y la memoria real en Linux (en Windows: ver `portal/site/SPIKE.md` y el informe de la integración).
+
+
+## 11. Asistente de IA (Groq)
+
+El editor tiene un asistente (reescribir, acortar, expandir, corregir, pasos) y «Crear página con IA». La IA propone y una persona aprueba: nada se guarda ni se publica solo, y lo creado nace como borrador.
+
+- **Clave:** se puede poner desde el panel, en **Ajustes → Asistente de IA** (solo administradores): se guarda **cifrada en la base de datos** (AES-256-GCM, la misma clave maestra que la 2FA: `PORTAL_SECRET_KEY` o `<datos>/secret.key`), sobrevive a reinicios y a «Actualizar el sistema», y manda sobre el entorno. El `.env` sigue valiendo como alternativa: `GROQ_API_KEY` en `.env` (Docker la pasa al contenedor). Sin ninguna de las dos, el botón del editor queda deshabilitado («Configura la clave de IA en Ajustes»).
+- **Si cambia o se pierde la clave maestra** (`PORTAL_SECRET_KEY`/`secret.key`), la clave guardada en Ajustes deja de poder leerse: Ajustes lo avisa y basta pegarla otra vez. El paquete `.ispmax` **no** lleva la clave; un `pg_dump` completo la lleva cifrada.
+- Variables opcionales: `GROQ_MODEL` (def. `openai/gpt-oss-120b`; el modelo elegido en Ajustes manda), `PORTAL_AI_RATE` (peticiones por persona cada 10 min, def. 20). `GROQ_BASE_URL` existe solo para pruebas (servidor falso).
+- Hace falta salida a internet del contenedor hacia `api.groq.com` (HTTPS). Sin ella, el asistente responde «No se pudo conectar con el servicio de IA» y el resto del portal sigue igual.
+- Qué sale a un servicio externo y qué no: `portal/SECURITY.md` § 9.
+
+- Historial del asistente: `PORTAL_AI_HISTORY_DAYS` (def. 90; 0 = sin caducidad). Las conversaciones viven en las tablas `ai_*` de la BD, no entran en el paquete `.ispmax` ni en los respaldos `pg_dump` (datos excluidos a propósito).

@@ -90,6 +90,12 @@ export function useContentTree() {
     } catch (e) { toast(errText(e), 'error'); }
   }, [toast, load, createGroup]);
 
-  return { sections, menu, error, reload: load, saveSection, setLocal, createGroup, deleteGroup, modified, index };
+  /** Renombra un grupo (con o sin páginas) en el servidor, en una sola operación. */
+  const renameGroup = useCallback(async (seccion: string, from: string, to: string) => {
+    try { await api.renameGroup(seccion, from, to); await load(); statsChanged(); toast(`Grupo renombrado a «${to}»`); return true; }
+    catch (e) { toast(errText(e), 'error'); return false; }
+  }, [toast, load]);
+
+  return { sections, menu, error, reload: load, saveSection, setLocal, createGroup, deleteGroup, renameGroup, notify: (m: string) => toast(m, 'error'), modified, index };
 }
 export type ContentTreeState = ReturnType<typeof useContentTree>;

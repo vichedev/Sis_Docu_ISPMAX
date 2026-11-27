@@ -58,6 +58,7 @@ export function registerSyncRoutes(app, ctx) {
       let detail;
       try {
         const r = await importFromRepo({ pool, repoRoot, overwrite, log: job.log, userId });
+        await ctx.registerGroups?.(userId); // los grupos de lo importado quedan registrados
         detail = { overwrite, jobId, ...r, skippedItems: r.skippedItems.slice(0, 100) };
         await job.finish('ok');
       } catch (e) {

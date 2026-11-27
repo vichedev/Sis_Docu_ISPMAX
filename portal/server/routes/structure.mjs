@@ -1,12 +1,15 @@
 // Estructura: árbol anidado por sección/grupo (subsecciones vía parent_id), reordenación en transacción,
 // grupos (crear/renombrar) y menú de /guia (docs/sidebar.json en site_files) con la misma API.
 import { httpError, SECCIONES, SECCION_KEYS, parseId } from './util.mjs';
+import { normName } from './groups.mjs';
+import { readGroups, saveGroups, deriveGroups, SIDEBAR_PATH } from '../groupStore.mjs';
 import { TOP_MENU } from './topnav.mjs';
 import { dangerousUrl } from './mdxSafety.mjs';
 import { effectiveGroup, cmpGroups, OTRAS, MAX_DEPTH } from '../../../scripts/lib/nav-core.mjs';
 
-const SIDEBAR_PATH = 'docs/sidebar.json';
-const GROUPS_KEY = 'structure_groups'; // settings: { [seccion]: [nombres de grupos vacíos] }
+// Un grupo es una entidad propia de su sección (settings.structure_groups = { [seccion]: [nombres] }, ver server/groupStore.mjs): se
+// registra en cuanto tiene una página o se crea desde el panel y solo desaparece con «Eliminar grupo» (DELETE /api/structure/groups).
+// Eliminar o mover su última página NO lo borra; el manual público oculta los grupos sin páginas publicadas.
 const MAX_NODES = 3000;
 
 // Mismo criterio que el menú publicado (scripts/lib/nav-core.mjs, compartido con build-nav y el manual dinámico):
@@ -67,18 +70,8 @@ export function registerStructureRoutes(app, ctx) {
     );
     return content;
   }
-  async function emptyGroups(q = db) {
-    const r = await q.query('SELECT value FROM settings WHERE key = $1', [GROUPS_KEY]);
-    const v = r.rows[0]?.value;
-    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
-  }
-  async function saveEmptyGroups(q, value, userId) {
-    await q.query(
-      `INSERT INTO settings (key, value, updated_by, updated_at) VALUES ($1,$2,$3,now())
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = now()`,
-      [GROUPS_KEY, JSON.stringify(value), userId]
-    );
-  }
+  const emptyGroups = (q = db) => readGroups(q);
+  const saveEmptyGroups = (q, value, userId) => saveGroups(q, value, userId);
 
   // Árbol de una sección distinta de /guia: [{name, pages:[nodo]}] en el orden de build-nav (General primero, resto alfabético).
   function treeOf(rows, seccion, empties = []) {
@@ -95,12 +88,12 @@ export function registerStructureRoutes(app, ctx) {
         groups.get(g).push(n);
       }
     }
-    for (const g of empties) if (!groups.has(g)) groups.set(g, []);
+    for (const g of empties) if (![...groups.keys()].some((x) => normName(x) === normName(g))) groups.set(g, []); // grupo registrado sin páginas
     return [...groups.entries()].sort(([a], [b]) => cmpGroups(a, b)).map(([name, pages]) => ({ name, pages }));
   }
 
   // Árbol de /guia: el sidebar manda; las páginas que no están en él van por parent_id o por su grupo (como build-nav).
-  function guiaTree(rows, sidebar) {
+  function guiaTree(rows, sidebar, kept = []) {
     const byRoute = new Map(rows.map((p) => [p.route, p]));
     const nodes = new Map();
     const used = new Set();
@@ -133,11 +126,20 @@ export function registerStructureRoutes(app, ctx) {
     for (const p of pending.filter(hasParent).sort(byOrden)) nodes.get(p.parent_id).children.push(nodes.get(p.id));
     groups.forEach((g) => g.pages.forEach(mark));
     for (const p of pending) if (!reach.has(p.id)) attach(p); // ciclo imposible por validación; por si acaso no se pierde nada
+    for (const g of kept) if (!groups.some((x) => normName(x.name) === normName(g))) groups.push({ name: g, pages: [] }); // grupo registrado que se quedó sin páginas
     return groups;
   }
 
+  /**
+   * Registra en structure_groups los grupos que hoy tienen páginas, para que NO desaparezcan al quedarse vacíos (idempotente).
+   * Se llama al arrancar (migra lo existente) y antes de cada cambio que puede vaciar un grupo (ctx.registerGroups).
+   */
+  const registerGroups = (userId = null, q = db) => deriveGroups(q, userId);
+  ctx.registerGroups = (userId = null) => registerGroups(userId).catch((e) => console.error('[structure] registerGroups:', e.message));
+  void ctx.registerGroups();
+
   // ---------- GET
-  app.get('/api/structure', viewer, async () => {
+  async function loadStructure() {
     const r = await db.query(
       `SELECT id, title, route, file_path, seccion, grupo, orden, status, parent_id, frontmatter->>'menu' AS menu,
               CASE WHEN orden <> 0 OR frontmatter ? 'orden' THEN orden ELSE 999 END AS eff_orden
@@ -151,7 +153,7 @@ export function registerStructureRoutes(app, ctx) {
     const secciones = SECCIONES.map((s) => {
       // La portada de la sección (/tareas, /problemas…) no es del menú: sale aparte.
       const rows = r.rows.filter((x) => x.seccion === s.key && x.route !== `/${s.key}`);
-      const grupos = s.key === 'guia' ? guiaTree(rows, sidebar).map((g) => ({ name: g.name, pages: g.pages })) : treeOf(rows, s.key, empties[s.key] ?? []);
+      const grupos = s.key === 'guia' ? guiaTree(rows, sidebar, empties.guia ?? []).map((g) => ({ name: g.name, pages: g.pages })) : treeOf(rows, s.key, empties[s.key] ?? []);
       return { key: s.key, label: s.label, sectionIndex: pageRef(byRoute.get(`/${s.key}`)), grupos };
     });
     // Menú superior del manual (rspress.config.ts) con sus ítems resueltos a páginas.
@@ -160,7 +162,9 @@ export function registerStructureRoutes(app, ctx) {
       items: (m.items ?? []).map((it) => ({ text: it.text, link: it.link, page: pageRef(byRoute.get(it.link.replace(/\/+$/, '') || '/')) })),
     }));
     return { secciones, menu };
-  });
+  }
+  ctx.loadStructure = loadStructure; // lo usa el asistente de IA (ai/proposals.mjs) para ver el menú como lo ve el panel
+  app.get('/api/structure', viewer, async () => loadStructure());
 
   // ---------- PUT order
   // Aplana grupos → [{id, group, parentId, orden, depth}] validando forma, profundidad (≤3) y duplicados.
@@ -211,6 +215,7 @@ export function registerStructureRoutes(app, ctx) {
   }
 
   app.put('/api/structure/order', editor, async (request) => {
+    await registerGroups(request.user.id); // lo que hoy tiene páginas queda registrado antes de moverlas
     const { seccion, grupos } = request.body || {};
     if (!SECCION_KEYS.includes(seccion)) throw httpError(400, 'Sección no válida.');
     const { flat, groupNames } = flatten(grupos);
@@ -285,10 +290,9 @@ export function registerStructureRoutes(app, ctx) {
           if (o.status === 'published') visible = true;
           n++;
         }
-        // grupos vacíos que se quieren conservar
-        const used = new Set(flat.map((f) => f.group));
+        // todos los grupos del árbol se conservan, también los que quedan vacíos (un grupo solo se elimina con «Eliminar grupo»)
         const empties = await emptyGroups(c);
-        const keep = groupNames.filter((g) => !used.has(g) && g !== '');
+        const keep = groupNames.filter((g) => g !== '');
         if (JSON.stringify(empties[seccion] ?? []) !== JSON.stringify(keep)) {
           await saveEmptyGroups(c, { ...empties, [seccion]: keep }, request.user.id);
         }
@@ -302,35 +306,50 @@ export function registerStructureRoutes(app, ctx) {
   });
 
   // ---------- grupos
-  /** Ids de las páginas (no portadas) de la sección cuyo grupo efectivo es `name`. */
-  async function idsInGroup(c, seccion, name) {
-    const pr = await c.query('SELECT id, route, grupo FROM pages WHERE seccion = $1 AND deleted_at IS NULL AND route <> $2', [seccion, `/${seccion}`]);
-    return pr.rows.filter((p) => effectiveGroup(p, seccion) === name).map((p) => p.id);
+  /** Páginas (no portadas) de la sección cuyo grupo es `name`: grupo efectivo exacto; en la Guía, por nombre normalizado («INICIO» = «🚀 INICIO»). */
+  async function pagesInGroup(c, seccion, name) {
+    const pr = await c.query('SELECT id, route, grupo, status FROM pages WHERE seccion = $1 AND deleted_at IS NULL AND route <> $2', [seccion, `/${seccion}`]);
+    return pr.rows.filter((p) => (seccion === 'guia' ? !!p.grupo && normName(p.grupo) === normName(name) : effectiveGroup(p, seccion) === name));
   }
+  const idsInGroup = async (c, seccion, name) => (await pagesInGroup(c, seccion, name)).map((p) => p.id);
   function groupName(v, campo = 'name') {
     if (typeof v !== 'string' || !v.trim() || v.trim().length > 120) throw httpError(400, `El campo ${campo} debe ser un nombre de 1 a 120 caracteres.`);
     return v.trim();
   }
+  /** Nombres de grupo que ya existen en la sección: páginas, registro y (Guía) cabeceras del sidebar. `skip`: nombre a ignorar (el que se renombra). */
+  async function knownGroups(c, seccion, sidebarData, skip = null) {
+    const pr = await c.query('SELECT route, grupo FROM pages WHERE seccion = $1 AND deleted_at IS NULL AND route <> $2', [seccion, `/${seccion}`]);
+    const names = new Set((await emptyGroups(c))[seccion] ?? []);
+    for (const p of pr.rows) {
+      if (seccion === 'guia') { if (p.grupo) names.add(p.grupo); } else names.add(effectiveGroup(p, seccion));
+    }
+    for (const g of sidebarData ?? []) if (g && typeof g.sectionHeader === 'string') names.add(g.sectionHeader);
+    return [...names].filter((n) => !skip || normName(n) !== normName(skip));
+  }
+  const clash = (names, name) => names.find((n) => normName(n) === normName(name));
+  const dupMsg = (hit, name) => (hit === name ? `El grupo «${name}» ya existe.` : `Ya existe el grupo «${hit}»: no se crea uno casi igual.`);
 
   app.post('/api/structure/groups', editor, async (request, reply) => {
     const b = request.body || {};
     if (!SECCION_KEYS.includes(b.seccion)) throw httpError(400, 'Sección no válida.');
     const name = groupName(b.name);
     const visible = await tx(async (c) => {
+      await registerGroups(request.user.id, c);
+      let like = null;
+      let data = [];
       if (b.seccion === 'guia') {
-        const like = await readSidebarRow(c);
-        const data = parseSidebar(like);
-        if (data.some((g) => g.sectionHeader === name)) throw httpError(409, `El grupo «${name}» ya existe.`);
+        like = await readSidebarRow(c);
+        data = parseSidebar(like);
+      }
+      const hit = clash(await knownGroups(c, b.seccion, data), name);
+      if (hit) throw httpError(409, dupMsg(hit, name));
+      if (b.seccion === 'guia') {
         data.push({ sectionHeader: name, items: [] });
         return sidebarVisiblyChanged(c, like, await writeSidebar(c, data, like));
-      } else {
-        const dup = await idsInGroup(c, b.seccion, name);
-        const empties = await emptyGroups(c);
-        const list = empties[b.seccion] ?? [];
-        if (dup.length || list.includes(name)) throw httpError(409, `El grupo «${name}» ya existe.`);
-        await saveEmptyGroups(c, { ...empties, [b.seccion]: [...list, name] }, request.user.id);
-        return false; // un grupo vacío no aparece en el menú del manual
       }
+      const empties = await emptyGroups(c);
+      await saveEmptyGroups(c, { ...empties, [b.seccion]: [...(empties[b.seccion] ?? []), name] }, request.user.id);
+      return false; // un grupo vacío no aparece en el menú del manual
     });
     await audit(request.user.id, 'structure.group_create', b.seccion, { name });
     if (visible) dirty(`grupo creado: ${b.seccion} / ${name}`);
@@ -338,6 +357,7 @@ export function registerStructureRoutes(app, ctx) {
     return { ok: true, seccion: b.seccion, name };
   });
 
+  // Renombra un grupo (con o sin páginas) en una sola transacción: actualiza las páginas, el registro y, en la Guía, la cabecera del sidebar.
   app.put('/api/structure/groups', editor, async (request) => {
     const b = request.body || {};
     if (!SECCION_KEYS.includes(b.seccion)) throw httpError(400, 'Sección no válida.');
@@ -345,35 +365,35 @@ export function registerStructureRoutes(app, ctx) {
     const to = groupName(b.to, 'to');
     if (from === to) throw httpError(400, 'El nombre nuevo es igual al actual.');
     const changed = await tx(async (c) => {
-      const exists = { rowCount: (await idsInGroup(c, b.seccion, to)).length };
-      const fromIds = await idsInGroup(c, b.seccion, from);
+      await registerGroups(request.user.id, c);
       const empties = await emptyGroups(c);
       const list = empties[b.seccion] ?? [];
-      let found = list.includes(from);
+      const fromIds = await idsInGroup(c, b.seccion, from);
+      let found = list.some((x) => normName(x) === normName(from)) || fromIds.length > 0;
       let like = null;
       let data = null;
       if (b.seccion === 'guia') {
         like = await readSidebarRow(c);
         data = parseSidebar(like);
-        if (data.some((g) => g.sectionHeader === to)) throw httpError(409, `El grupo «${to}» ya existe.`);
-        const g = data.find((x) => x.sectionHeader === from);
-        if (g) {
-          g.sectionHeader = to;
-          found = true;
-        }
-      } else if (exists.rowCount || list.includes(to)) throw httpError(409, `El grupo «${to}» ya existe.`);
-      if (b.seccion === 'guia' && exists.rowCount) throw httpError(409, `El grupo «${to}» ya existe.`);
+        if (data.some((x) => x.sectionHeader === from)) found = true;
+      }
+      if (!found) throw httpError(404, `No existe el grupo «${from}».`);
+      // «inicio» → «INICIO» (mismo grupo, otra grafía) se permite; chocar con OTRO grupo existente, no.
+      const hit = clash(await knownGroups(c, b.seccion, data, from), to);
+      if (hit) throw httpError(409, dupMsg(hit, to));
+      if (data) for (const g of data) if (g.sectionHeader === from) g.sectionHeader = to;
       const u = await c.query(
         `UPDATE pages SET grupo = $3, frontmatter = jsonb_set(frontmatter, '{grupo}', to_jsonb($3::text)), fm_raw = NULL,
            version = version + 1, updated_at = now(), updated_by = $4
          WHERE seccion = $1 AND id = ANY($2) AND deleted_at IS NULL RETURNING status`,
         [b.seccion, fromIds, to, request.user.id]
       );
-      if (u.rowCount) found = true;
-      if (!found) throw httpError(404, `No existe el grupo «${from}».`);
       let visible = u.rows.some((x) => x.status === 'published');
       if (data && (await sidebarVisiblyChanged(c, like, await writeSidebar(c, data, like)))) visible = true;
-      if (list.includes(from)) await saveEmptyGroups(c, { ...empties, [b.seccion]: list.map((x) => (x === from ? to : x)) }, request.user.id);
+      // registro: el nombre nuevo sustituye al viejo (y queda registrado aunque el grupo no tenga páginas)
+      const renamed = list.map((x) => (normName(x) === normName(from) ? to : x)).filter((x, i, a) => a.findIndex((y) => normName(y) === normName(x)) === i);
+      if (JSON.stringify(renamed) !== JSON.stringify(list)) await saveEmptyGroups(c, { ...empties, [b.seccion]: renamed }, request.user.id);
+      await registerGroups(request.user.id, c);
       return { n: u.rowCount, visible };
     });
     await audit(request.user.id, 'structure.group_rename', b.seccion, { from, to, pages: changed.n });
@@ -381,28 +401,34 @@ export function registerStructureRoutes(app, ctx) {
     return { ok: true, seccion: b.seccion, from, to, changed: changed.n };
   });
 
-  // Elimina un grupo vacío (sin páginas). En /guia lo quita de docs/sidebar.json; en el resto, de los grupos creados desde el panel.
+  // Elimina un grupo VACÍO (acción explícita; es la única forma de que un grupo desaparezca). Con páginas se bloquea (409):
+  // hay que moverlas o eliminarlas antes. En la Guía quita también la cabecera de docs/sidebar.json.
   app.delete('/api/structure/groups', editor, async (request) => {
     const b = request.body || {};
     if (!SECCION_KEYS.includes(b.seccion)) throw httpError(400, 'Sección no válida.');
     const name = groupName(b.name);
     const visible = await tx(async (c) => {
+      const kept = await emptyGroups(c);
+      const klist = kept[b.seccion] ?? [];
+      const inRegistry = klist.some((x) => normName(x) === normName(name));
+      const n = (await pagesInGroup(c, b.seccion, name)).length;
+      let like = null;
+      let data = null;
+      let g = null;
       if (b.seccion === 'guia') {
-        const like = await readSidebarRow(c);
-        const data = parseSidebar(like);
-        const g = data.find((x) => x.sectionHeader === name);
-        if (!g) throw httpError(404, `No existe el grupo «${name}».`);
-        if ((g.items ?? []).length) throw httpError(409, `El grupo «${name}» tiene páginas: muévalas antes de eliminarlo.`);
-        return sidebarVisiblyChanged(c, like, await writeSidebar(c, data.filter((x) => x !== g), like));
+        like = await readSidebarRow(c);
+        data = parseSidebar(like);
+        g = data.find((x) => x.sectionHeader === name) ?? null;
+        if (!g && !inRegistry && !n) throw httpError(404, `No existe el grupo «${name}».`);
+        const alive = new Set((await c.query("SELECT route FROM pages WHERE seccion = 'guia' AND deleted_at IS NULL")).rows.map((x) => x.route));
+        const hasLive = (items) => (items ?? []).some((it) => alive.has(it?.link) || hasLive(it?.items)); // enlaces a páginas ya eliminadas no cuentan
+        if (n || (g && hasLive(g.items))) throw httpError(409, `El grupo «${name}» tiene páginas: muévalas o elimínelas antes de eliminar el grupo.`);
       } else {
-        const empties = await emptyGroups(c);
-        const list = empties[b.seccion] ?? [];
-        // Páginas con ese grupo efectivo (incluye las que lo toman de su carpeta)
-        if ((await idsInGroup(c, b.seccion, name)).length) throw httpError(409, `El grupo «${name}» tiene páginas: muévalas antes de eliminarlo.`);
-        if (!list.includes(name)) throw httpError(404, `No existe el grupo «${name}».`);
-        await saveEmptyGroups(c, { ...empties, [b.seccion]: list.filter((x) => x !== name) }, request.user.id);
-        return false;
+        if (n) throw httpError(409, `El grupo «${name}» tiene ${n} ${n === 1 ? 'página' : 'páginas'}: muévalas o elimínelas antes de eliminar el grupo.`);
+        if (!inRegistry) throw httpError(404, `No existe el grupo «${name}».`);
       }
+      if (inRegistry) await saveEmptyGroups(c, { ...kept, [b.seccion]: klist.filter((x) => normName(x) !== normName(name)) }, request.user.id);
+      return g ? sidebarVisiblyChanged(c, like, await writeSidebar(c, data.filter((x) => x !== g), like)) : false;
     });
     await audit(request.user.id, 'structure.group_delete', b.seccion, { name });
     if (visible) dirty(`grupo eliminado: ${b.seccion} / ${name}`);

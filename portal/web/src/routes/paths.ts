@@ -3,8 +3,8 @@
  * secciones de Ajustes y redirecciones de las direcciones antiguas.
  */
 
-export type SettingsSection = 'general' | 'manual' | 'seguridad' | 'sistema' | 'respaldos' | 'info';
-export const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'manual', 'seguridad', 'sistema', 'respaldos', 'info'];
+export type SettingsSection = 'general' | 'manual' | 'seguridad' | 'ia' | 'sistema' | 'respaldos' | 'info';
+export const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'manual', 'seguridad', 'ia', 'sistema', 'respaldos', 'info'];
 export const DEFAULT_SETTINGS_SECTION: SettingsSection = 'general';
 
 /** Segmento de `#/ajustes/:seccion` → sección válida (lo desconocido cae en «general»). */

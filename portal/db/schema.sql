@@ -205,3 +205,53 @@ CREATE TABLE IF NOT EXISTS login_locks (
   PRIMARY KEY (scope, key)
 );
 CREATE INDEX IF NOT EXISTS audit_user_action_idx ON audit_log (user_id, action, id DESC);
+
+-- Asistente de IA: historial de conversaciones de CADA usuario (solo las ve su dueño). No viaja en el paquete .ispmax
+-- ni en la auditoría; los respaldos pg_dump conservan la estructura pero NO estos datos (ver SECURITY.md § 9).
+CREATE TABLE IF NOT EXISTS ai_conversations (
+  id bigserial PRIMARY KEY,
+  user_id int NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title text NOT NULL DEFAULT '',
+  page_id int,                            -- sin clave foránea: importar un paquete .ispmax vacía y recarga pages
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE ai_conversations DROP CONSTRAINT IF EXISTS ai_conversations_page_id_fkey;
+CREATE INDEX IF NOT EXISTS ai_conversations_user_idx ON ai_conversations (user_id, updated_at DESC);
+CREATE TABLE IF NOT EXISTS ai_messages (
+  id bigserial PRIMARY KEY,
+  conversation_id bigint NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user','assistant')),
+  content text NOT NULL DEFAULT '',
+  proposals jsonb,                        -- propuestas validadas del asistente, cada una con su estado (pending/applied/discarded)
+  choices jsonb,                          -- respuestas rápidas ofrecidas
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ai_messages_conv_idx ON ai_messages (conversation_id, id);
+
+-- >>> GRUPOS (grupos del menú como entidad propia; bloque delimitado, no mezclar con otros)
+-- Un grupo existe en settings.structure_groups = { seccion: [nombre canónico, …] } y solo desaparece con «Eliminar grupo»
+-- (no al eliminar o mover su última página). Aquí se rellena UNA vez, a partir de las páginas actuales de las secciones por
+-- carpeta, sin duplicar (comparación: minúsculas, sin acentos, espacios colapsados). Si la clave ya existe no se toca.
+-- La Guía usa las cabeceras de docs/sidebar.json; sus grupos extra y cualquier alta posterior las registra el servidor
+-- al arrancar y antes de cada cambio (server/groupStore.mjs, deriveGroups: idempotente). El orden de los grupos no se guarda:
+-- lo da el menú (General primero, resto alfabético), así que nada del orden actual se pierde.
+INSERT INTO settings (key, value)
+SELECT 'structure_groups', COALESCE(
+  (SELECT jsonb_object_agg(seccion, names) FROM (
+     SELECT seccion, jsonb_agg(g ORDER BY g) AS names FROM (
+       SELECT DISTINCT ON (seccion, regexp_replace(lower(translate(trim(g), 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunaeiouun')), '[^a-z0-9]+', ' ', 'g')) seccion, g
+         FROM (
+           SELECT seccion,
+                  CASE WHEN trim(grupo) <> '' THEN trim(grupo)
+                       WHEN position('/' IN substr(route, length(seccion) + 3)) > 0
+                         THEN upper(left(replace(split_part(substr(route, length(seccion) + 3), '/', 1), '-', ' '), 1)) || substr(replace(split_part(substr(route, length(seccion) + 3), '/', 1), '-', ' '), 2)
+                       ELSE 'General' END AS g
+             FROM pages
+            WHERE deleted_at IS NULL AND seccion IN ('tareas', 'problemas', 'preguntas', 'referencia', 'conceptos') AND route <> '/' || seccion
+         ) x WHERE g <> ''
+        ORDER BY seccion, regexp_replace(lower(translate(trim(g), 'áéíóúüñÁÉÍÓÚÜÑ', 'aeiouunaeiouun')), '[^a-z0-9]+', ' ', 'g'), g
+     ) d GROUP BY seccion
+  ) s), '{}'::jsonb)
+WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = 'structure_groups');
+-- <<< GRUPOS

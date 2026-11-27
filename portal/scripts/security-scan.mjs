@@ -37,6 +37,8 @@ export const ROUTE_MATRIX = {
   'GET /api/users': 'admin', 'POST /api/users': 'admin', 'PUT /api/users/:id': 'admin', 'DELETE /api/users/:id': 'admin', 'GET /api/audit': 'admin',
   'GET /api/tours': 'viewer', 'GET /api/tours/:id': 'viewer', 'POST /api/tours': 'editor', 'PUT /api/tours/:id': 'editor', 'DELETE /api/tours/:id': 'editor',
   'POST /api/tours/:id/restore': 'editor', 'POST /api/tours/:id/duplicate': 'editor',
+  'GET /api/ai/status': 'editor', 'GET /api/ai/outline': 'editor', 'POST /api/ai/assist': 'editor', 'POST /api/ai/draft-page': 'editor', 'POST /api/ai/chat': 'editor', 'POST /api/ai/applied': 'editor', 'GET /api/ai/conversations': 'editor', 'POST /api/ai/conversations': 'editor', 'GET /api/ai/conversations/:id': 'editor', 'PUT /api/ai/conversations/:id': 'editor', 'DELETE /api/ai/conversations/:id': 'editor', 'DELETE /api/ai/conversations': 'editor', 'PUT /api/ai/messages/:id/proposal-state': 'editor',
+  'GET /api/ai/config': 'admin', 'PUT /api/ai/config': 'admin', 'POST /api/ai/test': 'admin',
   'POST /api/import': 'admin', 'GET /api/jobs/:id': 'viewer', 'GET /api/jobs': 'viewer',
   'GET /api/site/status': 'viewer', 'POST /api/site/rebuild': 'editor',
   'GET /api/system/version': 'viewer', 'GET /api/system/info': 'admin', 'POST /api/system/update': 'admin', 'POST /api/system/restart': 'admin',

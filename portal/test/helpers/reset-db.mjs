@@ -8,7 +8,7 @@ process.env.PORTAL_ADMIN_PATH = '';
 process.env.PORTAL_HIDE_ADMIN = '';
 
 export const ALL_TABLES =
-  'users, sessions, pages, page_revisions, redirects, assets, site_files, tours, settings, publish_jobs, backups, audit_log, login_attempts, login_locks, login_challenges, recovery_codes';
+  'users, sessions, pages, page_revisions, redirects, assets, site_files, tours, settings, publish_jobs, backups, audit_log, login_attempts, login_locks, login_challenges, recovery_codes, ai_conversations, ai_messages';
 
 /** `db`: pg.Client o pg.Pool conectados a la base de pruebas. */
 export async function resetTestDb(db) {

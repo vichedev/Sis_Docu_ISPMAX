@@ -7,7 +7,7 @@ export interface User {
   twoFactor?: boolean; mustChangePassword?: boolean; mustEnrollTwoFactor?: boolean;
 }
 export interface PageRow { id: number; route: string; title: string; seccion: string; grupo: string | null; orden: number; status: string; version: number; updated_at: string; updated_by_name?: string | null }
-export interface Page extends PageRow { file_path: string; description: string | null; frontmatter: Record<string, unknown>; body: string }
+export interface Page extends PageRow { deleted_at?: string | null; file_path: string; description: string | null; frontmatter: Record<string, unknown>; body: string }
 export interface Problem { level: string; message: string; line?: number }
 export interface Revision { id: number; version?: number; created_at: string; user_name?: string | null; author?: string | null; title?: string }
 export interface StructurePage { id: number; title: string; /** Texto del ítem en el menú del manual (con emoji en la Guía). */ menu?: string; route: string; orden: number; status: string; children?: StructurePage[] }
@@ -42,8 +42,8 @@ export const RESTRICTED_EVENT = 'portal:restricted';
 export type RestrictedCode = 'PASSWORD_CHANGE_REQUIRED' | '2FA_ENROLL_REQUIRED';
 export { ACCESS_EVENT } from './access';
 
-export async function request<T>(method: string, url: string, body?: unknown, form?: FormData): Promise<T> {
-  const init: RequestInit = { method, credentials: 'same-origin', headers: {} };
+export async function request<T>(method: string, url: string, body?: unknown, form?: FormData, signal?: AbortSignal): Promise<T> {
+  const init: RequestInit = { method, credentials: 'same-origin', headers: {}, ...(signal ? { signal } : {}) };
   if (form) init.body = form;
   else if (body !== undefined) { (init.headers as Record<string, string>)['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
   let res: Response;

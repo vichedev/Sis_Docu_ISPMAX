@@ -1,6 +1,6 @@
 /* Todas las páginas en una tabla densa: filtrar por sección y estado, buscar y ordenar. */
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Ellipsis, ExternalLink, FilePlus, FileText, FolderInput, PencilLine, Search, Trash2 } from 'lucide-react';
+import { Copy, Ellipsis, ExternalLink, FilePlus, FileText, FolderInput, PencilLine, Search, Sparkles, Trash2 } from 'lucide-react';
 import { Button, DropdownMenu, EmptyState, ErrorState, IconButton, Pager, SearchInput, SegmentedControl, SkeletonRows, StatusBadge, TBody, TD, TH, THead, TR, Table, Tabs, TabsList, TabsTrigger, useSort, useToast } from '@/components/ui';
 import { Page, useBreadcrumbs } from '@/components/layout/Page';
 import { api, type PageRow } from '@/lib/api';
@@ -8,6 +8,8 @@ import { can, useAuth } from '@/lib/auth';
 import { useAsync, useDebounced, useWindowEvent } from '@/lib/hooks';
 import { CONTENT_EVENT, SECCIONES, clearHashParams, copy, fmtDate, go, hashParam, relTime } from '@/lib/util';
 import { CreatePageDialog } from './CreatePageDialog';
+import { AiAssistantSheet } from '@/features/ai/AiAssistantSheet';
+import { useAiStatus } from '@/features/ai/useAiStatus';
 import { usePageActions } from './pageActions';
 import { siteHref } from '@/lib/siteHref';
 
@@ -23,6 +25,8 @@ export default function PagesListPage() {
   const [qText, setQText] = useState('');
   const [offset, setOffset] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [aiDraft, setAiDraft] = useState(false);
+  const ai = useAiStatus();
   useEffect(() => { clearHashParams(); }, []);
   useBreadcrumbs([{ label: 'Contenido' }, { label: 'Páginas', href: '#/contenido' }, { label: 'Tabla' }]);
   const q = useDebounced(qText, 300);
@@ -36,6 +40,7 @@ export default function PagesListPage() {
     <Page title="Todas las páginas" width="wide" description="Vista de tabla para filtrar y revisar. Para escribir y ordenar, use el árbol de Páginas."
       actions={<>
         <Button asChild><a href="#/contenido">Abrir el árbol</a></Button>
+        {can(user, 'editor') && <span title={ai.state.help ?? 'Describe la página y la IA propone un borrador'}><Button disabled={ai.state.disabled} onClick={() => setAiDraft(true)}><Sparkles size={16} /> Crear con IA</Button></span>}
         {can(user, 'editor') && <Button variant="primary" onClick={() => setCreating(true)}><FilePlus size={16} /> Crear página</Button>}
       </>}>
       <Tabs value={seccion} onValueChange={(v) => { setSeccion(v); setOffset(0); }}>
@@ -92,6 +97,7 @@ export default function PagesListPage() {
         </>
       )}
       <CreatePageDialog open={creating} onOpenChange={setCreating} />
+      <AiAssistantSheet open={aiDraft} onOpenChange={setAiDraft} />
       {actions.dialogs}
     </Page>
   );

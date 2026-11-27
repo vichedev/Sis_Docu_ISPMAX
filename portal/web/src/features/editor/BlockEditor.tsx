@@ -21,7 +21,7 @@ import { Redo2, ShieldAlert, Undo2 } from 'lucide-react';
 import { Callout, IconButton, useToast } from '@/components/ui';
 import type { Asset, Problem, UploadResult } from '@/lib/api';
 import { errText } from '@/lib/auth';
-import { imageFromAsset, insertBlock, mapBlock, newBlock, parseMdx, type Block } from '@/lib/blocks/index.ts';
+import { blockText, imageFromAsset, insertBlock, mapBlock, newBlock, parseMdx, type Block } from '@/lib/blocks/index.ts';
 import { cn } from '@/lib/cn';
 import { blockAtLine, blockFromCommand, blockLines, docText, problemsByBlock, roundTripOk } from './model/doc';
 import { breakMerge, canRedo, canUndo, initHistory, pushHistory, redo, undo, type History } from './model/history';
@@ -47,8 +47,18 @@ export interface BlockEditorProps {
   /** Bloque tras el que insertará la paleta (descripción corta), o null si irá al final de la página. */
   onTarget?: (label: string | null) => void;
 }
+/** Bloque de primer nivel seleccionado, para el asistente de IA. */
+export interface SelectedBlock { id: string; type: string; mdx: string }
 export interface BlockEditorHandle {
   focusLine: (line: number) => void;
+  /** Bloque de primer nivel seleccionado (null si no hay o es de solo lectura). */
+  getSelectedBlock?: () => SelectedBlock | null;
+  /** Sustituye un bloque por el MDX dado (un solo paso de historial). false si no se pudo. */
+  replaceBlock?: (id: string, mdx: string) => boolean;
+  /** Inserta MDX tras el bloque seleccionado (o al final). false si no se pudo. */
+  insertMdx?: (mdx: string) => boolean;
+  /** Deshace el último cambio del lienzo. */
+  undo?: () => void;
   /** Inserta un comando de la paleta tras el bloque seleccionado (o al final), o en la posición de primer nivel `at`. */
   insert?: (command: string, at?: number) => void;
 }
@@ -191,7 +201,54 @@ export const BlockEditor = forwardRef<BlockEditorHandle, BlockEditorProps>(({ va
     raf2(() => { focusBlock(id, 'start'); flash(id); });
   }, [locked, focusBlock, flash]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** MDX → bloques sin editar (conservan su texto exacto) con el fin de línea del documento. */
+  const parseFor = (mdx: string, eol: string) => parseMdx(mdx.replace(/\r?\n/g, eol)).map((p) => ({ ...p, eol: eol as Block['eol'] }));
+  const getSelectedBlock = useCallback((): SelectedBlock | null => {
+    if (locked) return null;
+    const top = topOf(activeRef.current);
+    const b = top ? blocksRef.current.find((x) => x.id === top) : null;
+    return b ? { id: b.id, type: b.type, mdx: blockText(b, '\n') } : null;
+  }, [locked]); // eslint-disable-line react-hooks/exhaustive-deps
+  const replaceBlock = useCallback((id: string, mdx: string): boolean => {
+    if (locked) return false;
+    const list = blocksRef.current;
+    const i = list.findIndex((b) => b.id === id);
+    if (i < 0) return false;
+    const old = list[i]!;
+    const eol = old.eol ?? '\n';
+    const parsed = parseFor(mdx.trim(), eol);
+    if (!parsed.length) return false;
+    const fixed = parsed.map((p, k) => {
+      const n: Block = { ...p };
+      if (k === 0) { if (old.pre != null) n.pre = old.pre; else delete n.pre; }
+      if (k === parsed.length - 1) { n.sep = old.sep; n.nextId = old.nextId; }
+      return n;
+    });
+    const next = list.slice();
+    next.splice(i, 1, ...fixed);
+    setHist((h) => pushHistory(h, next));
+    setActiveId(fixed[0]!.id);
+    raf2(() => flash(fixed[0]!.id));
+    return true;
+  }, [locked, flash]);
+  const insertMdx = useCallback((mdx: string): boolean => {
+    if (locked) return false;
+    const list = blocksRef.current;
+    const top = topOf(activeRef.current);
+    const i = top ? list.findIndex((b) => b.id === top) : -1;
+    const eol = list.find((b) => b.eol)?.eol ?? '\n';
+    const parsed = parseFor(mdx.trim(), eol).map((p) => { const n: Block = { ...p, sep: eol + eol, nextId: undefined }; delete n.pre; return n; });
+    if (!parsed.length) return false;
+    let next = list;
+    parsed.forEach((p, k) => { next = insertBlock(next, (i >= 0 ? i + 1 : list.length) + k, p); });
+    setHist((h) => pushHistory(h, next));
+    setActiveId(parsed[0]!.id);
+    raf2(() => flash(parsed[0]!.id));
+    return true;
+  }, [locked, flash]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useImperativeHandle(ref, () => ({
+    getSelectedBlock, replaceBlock, insertMdx, undo: doUndo,
     focusLine: (line) => {
       const id = blockAtLine(blockLines(blocks), line);
       if (!id) return;
@@ -201,7 +258,7 @@ export const BlockEditor = forwardRef<BlockEditorHandle, BlockEditorProps>(({ va
       flash(id);
     },
     insert,
-  }), [blocks, insert, flash]);
+  }), [blocks, insert, flash, getSelectedBlock, replaceBlock, insertMdx, doUndo]);
 
   // Destino de la paleta: el bloque de primer nivel seleccionado.
   useEffect(() => {

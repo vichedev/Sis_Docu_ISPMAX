@@ -4,23 +4,27 @@
  * URL por página: #/contenido/:id. En pantallas estrechas el árbol va en un panel lateral.
  */
 import { useEffect, useState } from 'react';
-import { FilePlus, FileText, Table2 } from 'lucide-react';
+import { FilePlus, FileText, Sparkles, Table2 } from 'lucide-react';
 import { Button, EmptyState, Sheet } from '@/components/ui';
 import { useBreadcrumbs } from '@/components/layout/Page';
 import { can, useAuth } from '@/lib/auth';
 import { useMediaQuery } from '@/lib/hooks';
-import { clearHashParams, hashParam, recentPages } from '@/lib/util';
+import { clearHashParams, hashParam } from '@/lib/util';
+import { useRecentPages } from '@/lib/recent';
 import { CreatePageDialog } from '@/features/pages/CreatePageDialog';
 import { usePageActions } from '@/features/pages/pageActions';
 import { ContentTree, type CreateInit } from '@/features/structure/ContentTree';
 import { countPages, useContentTree } from '@/features/structure/useContentTree';
 import { ContentLoadCard } from '@/features/backups/ContentLoadCard';
 import { PageEditor } from './PageEditor';
+import { AiAssistantSheet } from '@/features/ai/AiAssistantSheet';
+import { useAiStatus } from '@/features/ai/useAiStatus';
 
-function NoPage({ onCreate, onOpenTree }: { onCreate: () => void; onOpenTree: () => void }) {
+function NoPage({ onCreate, onAiCreate, onOpenTree }: { onCreate: () => void; onAiCreate: () => void; onOpenTree: () => void }) {
+  const ai = useAiStatus();
   const { user } = useAuth();
   useBreadcrumbs([{ label: 'Contenido' }, { label: 'Páginas' }]);
-  const recent = recentPages().slice(0, 4);
+  const recent = useRecentPages(4);
   return (
     <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 py-16">
       <div className="w-full max-w-[520px]">
@@ -28,6 +32,7 @@ function NoPage({ onCreate, onOpenTree }: { onCreate: () => void; onOpenTree: ()
           action={<>
             <Button className="lg:hidden" onClick={onOpenTree}>Ver páginas</Button>
             {can(user, 'editor') && <Button variant="primary" onClick={onCreate}><FilePlus size={16} /> Crear página</Button>}
+            {can(user, 'editor') && <span title={ai.state.help ?? undefined}><Button disabled={ai.state.disabled} onClick={onAiCreate}><Sparkles size={16} /> Crear con IA</Button></span>}
             <Button asChild><a href="#/paginas"><Table2 size={16} /> Ver como tabla</a></Button>
           </>}>
           El árbol de la izquierda es el menú del manual. Ábralo para editar, arrastre para reordenar o use <b>+</b> para crear dentro de un grupo.
@@ -51,6 +56,7 @@ export default function ContentWorkspace({ id }: { id?: number }) {
   const [create, setCreate] = useState<CreateInit | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [treeSheet, setTreeSheet] = useState(false);
+  const [aiDraft, setAiDraft] = useState(false);
   const desktop = useMediaQuery('(min-width: 1024px)');
   useEffect(() => { if (hashParam('nueva') === '1') { clearHashParams(); setCreate(null); setCreateOpen(true); } }, []);
   useEffect(() => setTreeSheet(false), [id]);
@@ -63,8 +69,9 @@ export default function ContentWorkspace({ id }: { id?: number }) {
     <div className="flex h-[calc(100vh-52px)] min-h-0 max-lg:h-auto max-lg:min-h-[calc(100vh-52px)]">
       {desktop && <aside aria-label="Árbol del manual" className="flex w-[288px] shrink-0 flex-col border-r border-line bg-side">{treeEl}</aside>}
       {!desktop && <Sheet open={treeSheet} onOpenChange={setTreeSheet} title="Páginas del manual">{treeEl}</Sheet>}
-      {empty && !id ? <div className="flex min-w-0 flex-1 items-center justify-center p-6 max-sm:p-4"><ContentLoadCard /></div> : id ? <PageEditor key={id} id={id} actions={actions} onOpenTree={() => setTreeSheet(true)} /> : <NoPage onCreate={() => openCreate(null)} onOpenTree={() => setTreeSheet(true)} />}
+      {empty && !id ? <div className="flex min-w-0 flex-1 items-center justify-center p-6 max-sm:p-4"><ContentLoadCard /></div> : id ? <PageEditor key={id} id={id} actions={actions} onOpenTree={() => setTreeSheet(true)} /> : <NoPage onCreate={() => openCreate(null)} onAiCreate={() => setAiDraft(true)} onOpenTree={() => setTreeSheet(true)} />}
       <CreatePageDialog open={createOpen} onOpenChange={setCreateOpen} initial={create} />
+      <AiAssistantSheet open={aiDraft} onOpenChange={setAiDraft} />
       {actions.dialogs}
     </div>
   );

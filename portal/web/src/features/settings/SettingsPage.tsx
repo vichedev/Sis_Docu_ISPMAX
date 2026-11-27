@@ -1,12 +1,12 @@
 /*
  * Ajustes (solo administradores), con navegación interna por secciones (`#/ajustes/:seccion`):
- *   General · Actualización del manual · Actualización del sistema · Respaldos · Información del sistema.
+ *   General · Actualización del manual · Seguridad · Asistente de IA · Actualización del sistema · Respaldos · Información del sistema.
  * Cada sección editable guarda con su propio botón; los cambios sin guardar se conservan al pasar de una sección a otra
  * (punto ámbar en el menú) y se avisa al salir de Ajustes. Aquí no hay rutas, carpetas, comandos ni datos de Git:
  * eso lo gestiona el sistema (y «Actualizar el sistema»).
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CloudDownload, DatabaseBackup, Info, MessageCircle, RefreshCw, Save, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { CloudDownload, DatabaseBackup, Info, MessageCircle, RefreshCw, Save, ShieldCheck, SlidersHorizontal, Sparkles, type LucideIcon } from 'lucide-react';
 import { Badge, Button, Callout, ErrorState, Field, FieldStack, Input, Panel, Select, SkeletonRows, Switch, useToast } from '@/components/ui';
 import { Page, useBreadcrumbs } from '@/components/layout/Page';
 import { api, type SettingDef } from '@/lib/api';
@@ -21,6 +21,7 @@ import { isLive } from '@/lib/siteModel';
 import { SystemUpdate } from '@/features/system/SystemUpdate';
 import { SystemInfo } from '@/features/system/SystemInfo';
 import { SecuritySection } from './SecuritySection';
+import { AiSection } from './AiSection';
 import { dirtyKeys, groupSettings, numberProblem, shownTitle, whatsappDigits, whatsappProblem, type EditableSection } from './settingsModel';
 
 interface SectionMeta { id: SettingsSection; label: string; icon: LucideIcon; description: string }
@@ -28,6 +29,7 @@ const SECTIONS: SectionMeta[] = [
   { id: 'general', label: 'General', icon: SlidersHorizontal, description: 'Cómo se presenta el manual publicado a quien lo lee. Los cambios se aplican al manual público, que se actualiza solo.' },
   { id: 'manual', label: 'Actualización del manual', icon: RefreshCw, description: 'Cuándo se actualiza el manual publicado después de guardar un cambio en algo ya publicado.' },
   { id: 'seguridad', label: 'Seguridad', icon: ShieldCheck, description: 'Cómo protege el portal el acceso de las cuentas de administrador.' },
+  { id: 'ia', label: 'Asistente de IA', icon: Sparkles, description: 'Clave y modelo del asistente que ayuda a redactar y a crear páginas en borrador. La IA propone; una persona aprueba.' },
   { id: 'sistema', label: 'Actualización del sistema', icon: CloudDownload, description: 'Versión instalada, novedades y actualización del código del sistema. El contenido del manual no se toca.' },
   { id: 'respaldos', label: 'Respaldos', icon: DatabaseBackup, description: 'Cuántas copias completas de la base de datos se conservan.' },
   { id: 'info', label: 'Información del sistema', icon: Info, description: 'Datos de esta instalación, de solo lectura y sin contraseñas ni credenciales, para pedir ayuda a soporte.' },
@@ -224,6 +226,7 @@ export default function SettingsPage({ section }: { section: SettingsSection }) 
         </div>
       );
       case 'seguridad': return <SecuritySection def={data?.definitions.find((d) => d.key === 'require_2fa_for_admins')} value={data?.settings.require_2fa_for_admins} loading={loading && !data} error={error} onRetry={reload} onSaved={reload} />;
+      case 'ia': return <AiSection />;
       case 'sistema': return <SystemUpdate />;
       case 'respaldos': return (
         <div className="flex flex-col gap-5">

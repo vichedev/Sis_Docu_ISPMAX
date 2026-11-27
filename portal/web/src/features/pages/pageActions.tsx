@@ -9,7 +9,7 @@ import { isLive } from '@/lib/siteModel';
 import { Button, ConfirmDialog, DescriptionList, Dialog, Field, FieldRow, FieldStack, HelpText, Input, Select, useToast } from '@/components/ui';
 import { api, type StructurePage } from '@/lib/api';
 import { errText } from '@/lib/auth';
-import { SECCIONES, contentChanged, go, slugify } from '@/lib/util';
+import { SECCIONES, contentChanged, forgetRecent, go, slugify } from '@/lib/util';
 import { moduloOf, slugOf, tipoFromFrontmatter } from './constants';
 
 export interface PageRef { id: number; title: string; route: string; seccion: string; grupo?: string | null }
@@ -74,6 +74,7 @@ export function usePageActions() {
           try {
             await api.deletePage(deleting.id);
             const id = deleting.id;
+            forgetRecent(id);
             toast('Página eliminada', 'ok', { label: 'Deshacer', run: () => { void api.restorePage(id).then(() => { contentChanged(); toast('Página recuperada'); }); } });
             contentChanged();
             if (window.location.hash.startsWith(`#/contenido/${id}`)) go('/contenido');

@@ -5,6 +5,7 @@ import {
 import { validatePage } from './validate.mjs';
 import { mdxSecurityProblems } from './mdxSafety.mjs';
 import { checkParentRow } from './tree.mjs';
+import { canonicalGroupFor } from './groups.mjs';
 import { brokenLinkWarnings } from './links.mjs';
 
 /** 400 si el cuerpo o el frontmatter llevan algo ejecutable (ver mdxSafety.mjs). */
@@ -15,7 +16,7 @@ function assertSafe(body, frontmatter) {
   }
 }
 
-const TIPOS = {
+export const TIPOS = {
   tarea: { fm: 'tarea', kicker: 'Quiero hacer…', body: () => '<Lead>Resumen de una frase de lo que se logra.</Lead>\n\n## Antes de empezar\n\n\n## Pasos\n\n<Steps>\n<Step>\n\n\n\n</Step>\n</Steps>\n\n## Qué esperar\n\n' },
   guia: { fm: 'guia', kicker: 'Guía de pantallas', body: () => '<Lead>Para qué sirve esta pantalla.</Lead>\n\n## Dónde está\n\n\n## Qué contiene\n\n\n## Acciones disponibles\n\n' },
   problema: { fm: 'problema', kicker: 'Problemas', body: () => '## Síntomas\n\n\n## Verifique primero\n\n\n## Posibles causas\n\n\n## Solución\n\n' },
@@ -134,6 +135,7 @@ export function registerPageRoutes(app, ctx) {
     if (b.modulo !== undefined && b.modulo !== null && b.modulo !== '') modulo = checkSlug(b.modulo, 'modulo');
     if (b.seccion === 'tareas' && !modulo) throw httpError(400, 'Las tareas necesitan un módulo (campo modulo).');
     let grupo = b.grupo === undefined || b.grupo === null ? '' : str(b.grupo, 'grupo', 120);
+    if (grupo) grupo = (await canonicalGroupFor(ctx, b.seccion, grupo)) ?? grupo; // «inicio» = el grupo existente, no uno nuevo
     const parentId = b.parent_id === undefined || b.parent_id === null ? null : parseId(b.parent_id, 'parent_id');
     const route = buildRoute(b.seccion, modulo, b.slug);
     const file_path = routeToFile(route);
@@ -168,6 +170,7 @@ export function registerPageRoutes(app, ctx) {
   app.put('/api/pages/:id', editor, async (request) => {
     const id = parseId(request.params.id);
     const b = request.body || {};
+    if (b.grupo !== undefined || b.frontmatter?.grupo !== undefined) await ctx.registerGroups?.(request.user.id); // el grupo que deja esta página sobrevive aunque quede vacío
     if (!Number.isInteger(b.version)) throw httpError(400, 'Falta `version` (la que se cargó al abrir la página).');
     if (b.title !== undefined) str(b.title, 'title', 200, false);
     if (b.description !== undefined) str(b.description, 'description', 1000);
@@ -226,6 +229,7 @@ export function registerPageRoutes(app, ctx) {
   app.post('/api/pages/:id/move', editor, async (request) => {
     const id = parseId(request.params.id);
     const b = request.body || {};
+    await ctx.registerGroups?.(request.user.id); // el grupo del que sale (aunque sea su última página) sobrevive vacío
     const result = await tx(async (c) => {
       const r = await c.query('SELECT * FROM pages WHERE id = $1 FOR UPDATE', [id]);
       const old = r.rows[0];
@@ -240,6 +244,7 @@ export function registerPageRoutes(app, ctx) {
       if (b.modulo === undefined && seccion !== cur.seccion && !['tareas', 'problemas'].includes(seccion)) modulo = null;
       if (seccion === 'tareas' && !modulo) throw httpError(400, 'Las tareas necesitan un módulo.');
       let grupo = b.grupo !== undefined ? str(b.grupo, 'grupo', 120) : old.grupo;
+      if (b.grupo !== undefined && grupo) grupo = (await canonicalGroupFor(ctx, seccion, grupo)) ?? grupo; // «inicio» = el grupo existente, no uno nuevo
       // subsección: parent_id (null la devuelve al nivel normal); al cambiar de sección sin indicar padre se quita
       let parentId = old.parent_id ?? null;
       if (b.parent_id !== undefined) parentId = b.parent_id === null ? null : parseId(b.parent_id, 'parent_id');
@@ -303,6 +308,7 @@ export function registerPageRoutes(app, ctx) {
   // ---- borrar / restaurar
   app.delete('/api/pages/:id', editor, async (request) => {
     const id = parseId(request.params.id);
+    await ctx.registerGroups?.(request.user.id); // el grupo de esta página sobrevive aunque sea la última
     const r = await db.query(
       "UPDATE pages SET deleted_at = now(), updated_at = now(), updated_by = $2 WHERE id = $1 AND deleted_at IS NULL AND seccion <> 'raiz' RETURNING route, status",
       [id, request.user.id]
@@ -348,6 +354,7 @@ export function registerPageRoutes(app, ctx) {
   app.post('/api/pages/:id/revisions/:revId/restore', editor, async (request) => {
     const id = parseId(request.params.id);
     const revId = parseId(request.params.revId, 'revId');
+    await ctx.registerGroups?.(request.user.id);
     const result = await tx(async (c) => {
       const rv = await c.query('SELECT snapshot FROM page_revisions WHERE id = $1 AND page_id = $2', [revId, id]);
       if (!rv.rowCount) throw httpError(404, 'Revisión no encontrada.');

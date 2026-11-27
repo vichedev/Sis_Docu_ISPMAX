@@ -45,6 +45,13 @@
 //   PORTAL_DATA_DIR          Datos: sitio publicado (site/), site-meta.json y respaldos (def. portal/data).
 //   PORTAL_RESTART_MODE      Valor por defecto del ajuste restart_mode: exit (def.; Docker/pm2 rearrancan) o respawn.
 //
+//  Asistente de IA (Groq; ver portal/SECURITY.md § 9). La clave se puede poner en Ajustes (cifrada en la BD, manda) o aquí.
+//   GROQ_API_KEY             Clave de Groq (alternativa a Ajustes). Nunca sale por la API ni se registra.
+//   GROQ_MODEL               Modelo por defecto (def. openai/gpt-oss-120b; Ajustes tiene prioridad).
+//   GROQ_BASE_URL            Solo pruebas: servidor falso. Def. https://api.groq.com
+//   PORTAL_AI_RATE           Peticiones de IA por usuario cada 10 minutos (def. 20).
+//   PORTAL_AI_HISTORY_DAYS   Días que se conservan las conversaciones del asistente (def. 90; 0 = sin caducidad).
+//
 //  Manual público (portal/site/, ver portal/DEPLOY.md)
 //   PORTAL_RENDER_MODE       dynamic (def.): cada página se dibuja al pedirla desde la BD y se guarda en memoria;
 //                            guardar en el panel = visible al instante; nada se escribe en disco. Necesita el tema
@@ -82,6 +89,7 @@ import { registerStructureRoutes } from './routes/structure.mjs';
 import { registerAssetRoutes } from './routes/assets.mjs';
 import { registerAdminRoutes } from './routes/admin.mjs';
 import { registerTourRoutes } from './routes/tours.mjs';
+import { registerAiRoutes } from './routes/ai.mjs';
 import { registerAdminGate, registerFrontend } from './http/frontend.mjs';
 
 loadEnv();
@@ -233,6 +241,7 @@ export async function buildApp({ databaseUrl, logger = false, config: overrides 
   registerAssetRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
   registerTourRoutes(app, ctx);
+  registerAiRoutes(app, ctx);
 
   const syncMod = await optionalImport('sync/index.mjs');
   if (syncMod) ctx.sync = { exportToDir: syncMod.exportToDir, importFromRepo: syncMod.importFromRepo };

@@ -100,7 +100,7 @@ export function createBackups({ ctx, jobs }) {
     // Se crea antes con permisos 600: pg_dump reescribe el archivo y conserva sus permisos (nunca queda legible por otros).
     await fsp.writeFile(partial, '', { mode: 0o600 });
     await restrictFile(partial);
-    const r = await run(pgTool('pg_dump'), ['-Fc', '--no-password', '-f', partial], {
+    const r = await run(pgTool('pg_dump'), ['-Fc', '--no-password', '--exclude-table-data=ai_messages', '--exclude-table-data=ai_conversations', '-f', partial], {
       env,
       log,
       timeoutMs: 15 * 60_000,
