@@ -31,6 +31,8 @@ export const BlockSchema = z.discriminatedUnion('type', [
     header: z.array(str(200)).min(1).max(10),
     rows: z.array(z.array(str(500)).max(10)).max(60),
   }),
+  // Imagen ADJUNTA por la persona: solo se referencia por image_ref («img1»); la ruta real la pone el servidor.
+  z.object({ type: z.literal('image'), image_ref: z.string().regex(/^img\d{1,2}$/), alt: str(300).optional().default(''), caption: str(300).optional().default(''), size: z.enum(['full', 'medium', 'small']).optional() }),
   z.object({ type: z.literal('code'), lang: z.string().regex(/^[a-z0-9+#-]{0,20}$/i).optional().default(''), code: str(4000) }),
 ]);
 export const TIPOS_IA = ['tarea', 'guia', 'problema', 'pregunta', 'referencia', 'concepto'];
@@ -139,6 +141,8 @@ export function renderBlock(b) {
       const row = (cells) => `| ${Array.from({ length: n }, (_, i) => cell(cells[i] ?? '')).join(' | ')} |`;
       return [row(b.header), `| ${Array.from({ length: n }, () => '---').join(' | ')} |`, ...b.rows.map(row)].join('\n');
     }
+    case 'figure':
+      return figureTag(b);
     case 'code': {
       const code = b.code.replace(/\n$/, '');
       const f = fenceFor(code);
@@ -146,6 +150,46 @@ export function renderBlock(b) {
     }
   }
 }
+// ---- Imágenes adjuntas: la IA NO las ve ni inventa rutas; solo coloca las que la persona subió (image_ref → asset real)
+/** Error de imagen para devolver al modelo (no se registra la propuesta). */
+export class ImageError extends Error {}
+const MAX_BY_SIZE = { medium: '720px', small: '420px' };
+/** Texto de atributo seguro: sin llaves, ángulos ni comillas dobles, en una línea. */
+export const attrText = (v) => String(v ?? '').replace(/[{}<>]/g, '').replace(/"/g, '”').replace(/\s+/g, ' ').trim();
+/** <Figure … /> con la ruta REAL del asset (mismo formato que el motor de bloques del panel). */
+export function figureTag(f) {
+  const max = f.size === 'full' || !f.size ? `${Math.min(f.width || 1100, 1100)}px` : MAX_BY_SIZE[f.size];
+  let a = ` src="/assets/${f.path}"`;
+  if (f.alt) a += ` alt="${attrText(f.alt)}"`;
+  if (f.caption) a += ` caption="${attrText(f.caption)}"`;
+  if (f.width) a += ` width={${Number(f.width) | 0}}`;
+  if (f.height) a += ` height={${Number(f.height) | 0}}`;
+  a += ` max="${max}"`;
+  return `<Figure${a} />`;
+}
+/**
+ * Sustituye los bloques image (image_ref) por figuras con la ruta real. `attachments`: Map ref → { path, alt, caption, size, width, height }
+ * (ya verificadas contra la BD: existen y son de quien conversa). Rechaza refs no adjuntas, alt vacío y refs repetidas en la propuesta.
+ * Devuelve { blocks, figureTags } (figureTags: las etiquetas generadas, las únicas <Figure> que la IA puede poner).
+ */
+export function resolveImages(blocks, attachments = new Map()) {
+  const used = new Set();
+  const figureTags = new Set();
+  const out = (blocks ?? []).map((b) => {
+    if (b.type !== 'image') return b;
+    const att = attachments.get(b.image_ref);
+    if (!att) throw new ImageError(`La imagen «${b.image_ref}» no está entre las adjuntas por la persona. No puedes inventar imágenes.`);
+    if (used.has(b.image_ref)) throw new ImageError(`La imagen «${b.image_ref}» ya está colocada en esta propuesta.`);
+    used.add(b.image_ref);
+    const alt = (b.alt || '').trim() || (att.alt || '').trim();
+    if (!alt) throw new ImageError(`Falta el texto alternativo de «${b.image_ref}»: descríbelo con lo que sabes (nombre y pie) o pregunta a la persona.`);
+    const fig = { type: 'figure', path: att.path, alt, caption: (b.caption || '').trim() || (att.caption || '').trim(), size: b.size ?? att.size ?? 'full', width: att.width, height: att.height };
+    figureTags.add(figureTag(fig));
+    return fig;
+  });
+  return { blocks: out, figureTags };
+}
+
 /** Texto original de cada bloque, para el control de seguridad ANTES de escapar. */
 export function rawTexts(b) {
   switch (b.type) {
@@ -154,6 +198,8 @@ export function rawTexts(b) {
     case 'table': return [...b.header, ...b.rows.flat()].join('\n');
     case 'callout': return `${b.title}\n${b.text}`;
     case 'code': return '';
+    case 'image':
+    case 'figure': return `${b.alt}\n${b.caption}`;
     default: return b.text;
   }
 }
@@ -164,6 +210,7 @@ export function rawTexts(b) {
  */
 export async function checkDraftOutput(json) {
   const d = parse(DraftSchema, json);
+  if (d.bloques.some((b) => b.type === 'image')) throw rejected('no puede colocar imágenes en una página propuesta de esta forma');
   // 1) Control de seguridad sobre el texto tal como lo escribió la IA: cualquier cosa ejecutable descarta todo.
   const plain = [d.title, d.description, d.ubicacion.grupo ?? '', d.ubicacion.motivo ?? '', ...d.avisos, ...d.bloques.map(rawTexts)].join('\n\n');
   const stray = strayTags(plain, new Set());

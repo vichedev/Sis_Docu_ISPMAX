@@ -50,6 +50,7 @@
 //   GROQ_MODEL               Modelo por defecto (def. openai/gpt-oss-120b; Ajustes tiene prioridad).
 //   GROQ_BASE_URL            Solo pruebas: servidor falso. Def. https://api.groq.com
 //   PORTAL_AI_RATE           Peticiones de IA por usuario cada 10 minutos (def. 20).
+//   PORTAL_AI_TPM            Tokens por minuto del plan de Groq (def. 8000, el gratuito): el asistente espera ≤ 8 s o avisa con los segundos.
 //   PORTAL_AI_HISTORY_DAYS   Días que se conservan las conversaciones del asistente (def. 90; 0 = sin caducidad).
 //
 //  Manual público (portal/site/, ver portal/DEPLOY.md)

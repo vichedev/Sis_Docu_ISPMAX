@@ -42,15 +42,19 @@ export async function setupAi(name) {
   process.env.GROQ_API_KEY = '';
   process.env.GROQ_MODEL = '';
   process.env.PORTAL_AI_RATE = '1000';
+  process.env.PORTAL_AI_TPM = '1000000'; // sin esperas por presupuesto salvo en las pruebas que lo piden
   process.env.PORTAL_AI_HISTORY_DAYS = '';
   process.env.GROQ_TIMEOUT_MS = '1500';
   const { buildApp } = await import('../../server/index.mjs');
   const { parseIpAllowList } = await import('../../server/config.mjs');
 
   // ---- Groq falso: cada llamada consume el siguiente paso de fake.script (mensaje o función(body) → mensaje)
-  const fake = { script: [], loop: false, mode: 'script', calls: [], closed: 0, server: null };
-  const sse = (res, message, slow) => {
-    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
+  const fake = { script: [], loop: false, mode: 'script', calls: [], closed: 0, server: null, retryAfter: null, rateOnce: 0, limits: null, usage: null };
+  const tok = (x) => Math.ceil(JSON.stringify(x ?? '').length / 3);
+  const limitHeaders = () => (fake.limits ? { 'x-ratelimit-limit-tokens': String(fake.limits.limit ?? 8000), 'x-ratelimit-remaining-tokens': String(fake.limits.remaining ?? 8000), 'x-ratelimit-reset-tokens': fake.limits.reset ?? '0s', 'x-ratelimit-limit-requests': String(fake.limits.reqLimit ?? 1000), 'x-ratelimit-remaining-requests': String(fake.limits.reqRemaining ?? 999) } : {});
+  const usageFor = (body, message) => (fake.usage ? fake.usage(body, message) : { prompt_tokens: tok(body?.messages) + tok(body?.tools), completion_tokens: tok(message), total_tokens: tok(body?.messages) + tok(body?.tools) + tok(message) });
+  const sse = (res, message, slow, usage) => {
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', ...limitHeaders() });
     const chunk = (delta, finish = null) => `data: ${JSON.stringify({ id: 'x', object: 'chat.completion.chunk', model: 'fake', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
     const parts = [];
     if (message.tool_calls) parts.push(chunk({ role: 'assistant', tool_calls: message.tool_calls.map((t, i) => ({ index: i, ...t })) }));
@@ -59,7 +63,7 @@ export async function setupAi(name) {
       parts.push(chunk({ role: 'assistant', content: '' }));
       for (let i = 0; i < txt.length; i += 12) parts.push(chunk({ content: txt.slice(i, i + 12) }));
     }
-    parts.push(chunk({}, message.tool_calls ? 'tool_calls' : 'stop'), 'data: [DONE]\n\n');
+    parts.push(`data: ${JSON.stringify({ id: 'x', object: 'chat.completion.chunk', model: 'fake', choices: [{ index: 0, delta: {}, finish_reason: message.tool_calls ? 'tool_calls' : 'stop' }], x_groq: { usage } })}\n\n`, 'data: [DONE]\n\n');
     let i = 0;
     const tick = () => {
       if (res.destroyed || res.writableEnded) return;
@@ -76,19 +80,21 @@ export async function setupAi(name) {
         let body = null;
         try { body = JSON.parse(raw); } catch {}
         fake.calls.push({ auth: req.headers.authorization, body });
-        const send = (st, txt) => { res.writeHead(st, { 'content-type': 'application/json' }); res.end(txt); };
-        if (fake.mode === 'rate') return send(429, JSON.stringify({ error: { message: `limit ${SENTINEL}` } }));
+        const send = (st, txt, extra = {}) => { res.writeHead(st, { 'content-type': 'application/json', ...limitHeaders(), ...extra }); res.end(txt); };
+        const ra = fake.retryAfter != null ? { 'retry-after': String(fake.retryAfter) } : {};
+        if (fake.mode === 'rate' || fake.rateOnce > 0) { if (fake.rateOnce > 0) fake.rateOnce--; return send(429, JSON.stringify({ error: { message: `limit ${SENTINEL}` } }), ra); }
         if (fake.mode === 'auth') return send(401, JSON.stringify({ error: { message: `bad key ${SENTINEL}` } }));
         if (fake.mode === 'badreq') return send(400, JSON.stringify({ error: { message: 'tool_use_failed' } }));
         const step = fake.loop ? tc('list_outline', {}) : fake.script.length ? fake.script.shift() : say('Listo.');
         const message = typeof step === 'function' ? step(body) : step;
-        if (body?.stream) return sse(res, fake.mode === 'slowstream' ? say('x'.repeat(400)) : message, fake.mode === 'slowstream');
-        send(200, JSON.stringify({ id: 'x', object: 'chat.completion', model: 'fake', choices: [{ index: 0, finish_reason: message.tool_calls ? 'tool_calls' : 'stop', message }] }));
+        const usage = usageFor(body, message);
+        if (body?.stream) return sse(res, fake.mode === 'slowstream' ? say('x'.repeat(400)) : message, fake.mode === 'slowstream', usage);
+        send(200, JSON.stringify({ id: 'x', object: 'chat.completion', model: 'fake', choices: [{ index: 0, finish_reason: message.tool_calls ? 'tool_calls' : 'stop', message }], usage }));
       });
     });
     return new Promise((resolve) => fake.server.listen(0, '127.0.0.1', () => { process.env.GROQ_BASE_URL = `http://127.0.0.1:${fake.server.address().port}`; resolve(); }));
   }
-  const reset = () => { fake.script = []; fake.loop = false; fake.mode = 'script'; fake.calls = []; fake.closed = 0; };
+  const reset = () => { fake.script = []; fake.loop = false; fake.mode = 'script'; fake.calls = []; fake.closed = 0; fake.retryAfter = null; fake.rateOnce = 0; fake.limits = null; fake.usage = null; };
 
   // ---- captura de todo lo que sale
   const seen = [];

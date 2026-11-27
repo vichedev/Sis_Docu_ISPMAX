@@ -3,16 +3,26 @@
 // solo se usa su código HTTP). Reintentos del SDK desactivados: el límite de uso se informa tal cual.
 import Groq from 'groq-sdk';
 import { httpError } from '../routes/util.mjs';
+import { parseDuration, tpmLimit } from './budget.mjs';
 
 export const DEFAULT_BASE_URL = 'https://api.groq.com';
 export const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 export const DEFAULT_TIMEOUT_MS = 45_000;
 
 /** Error del proveedor ya traducido a un mensaje para la persona usuaria (sin datos del proveedor). */
-export function providerError(kind) {
+const dots = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+/** Mensaje del límite del PROVEEDOR (plan gratuito de Groq), distinto del límite propio del portal (PORTAL_AI_RATE). */
+export function providerLimitMessage(retryAfter, tpm = tpmLimit()) {
+  const base = `La IA está al límite de su plan gratuito (${dots(tpm)} tokens/min).`;
+  return retryAfter ? `${base} Puedes reintentar en ${retryAfter} s.` : `${base} Espera unos segundos y reintenta.`;
+}
+export function providerLimitError(retryAfter) {
+  return httpError(429, providerLimitMessage(retryAfter), { code: 'AI_PROVIDER_LIMIT', ...(retryAfter ? { retryAfter } : {}) });
+}
+export function providerError(kind, info = {}) {
   switch (kind) {
     case 'rate':
-      return httpError(429, 'Se alcanzó el límite de uso de la IA; inténtalo en unos minutos.', { code: 'AI_RATE_LIMIT' });
+      return providerLimitError(info.retryAfter);
     case 'auth':
       // 502 y no 401: un 401 haría que el panel crea que la sesión caducó.
       return httpError(502, 'La clave de IA no es válida. Revísala en Ajustes.', { code: 'AI_KEY_INVALID' });
@@ -25,6 +35,32 @@ export function providerError(kind) {
     default:
       return httpError(502, 'El servicio de IA no pudo atender la petición. Inténtalo más tarde.', { code: 'AI_PROVIDER_ERROR' });
   }
+}
+
+/**
+ * Cabeceras de límite de Groq (en CADA respuesta): tokens por minuto (limit/remaining/reset) y peticiones por día.
+ * Devuelve null si no vienen. `resetInSec` es el reinicio del cupo de tokens.
+ */
+export function limitsFrom(headers) {
+  const get = (k) => (typeof headers?.get === 'function' ? headers.get(k) : headers?.[k]);
+  const num = (k) => { const raw = get(k); if (raw == null || raw === '') return null; const v = Number(raw); return Number.isFinite(v) ? v : null; };
+  const out = {
+    tokensLimit: num('x-ratelimit-limit-tokens'), tokensRemaining: num('x-ratelimit-remaining-tokens'), resetInSec: parseDuration(get('x-ratelimit-reset-tokens')),
+    requestsLimit: num('x-ratelimit-limit-requests'), requestsRemaining: num('x-ratelimit-remaining-requests'),
+  };
+  return Object.values(out).some((v) => v != null) ? out : null;
+}
+
+/** usage del proveedor → { prompt, completion, total } (null si no lo trae). */
+export function usageOf(u) {
+  if (!u || typeof u !== 'object') return null;
+  const prompt = Number(u.prompt_tokens);
+  const completion = Number(u.completion_tokens);
+  const total = Number(u.total_tokens);
+  if (![prompt, completion].every(Number.isFinite) && !Number.isFinite(total)) return null;
+  const p = Number.isFinite(prompt) ? prompt : 0;
+  const c = Number.isFinite(completion) ? completion : 0;
+  return { prompt: p, completion: c, total: Number.isFinite(total) ? total : p + c };
 }
 
 /** Extrae un objeto JSON de un texto (admite vallas ```json y texto alrededor). null si no hay. */
@@ -48,12 +84,25 @@ export function extractJson(text) {
   return a >= 0 && b > a ? obj(s.slice(a, b + 1)) : null;
 }
 
+/** Espera la respuesta y entrega las cabeceras de límite a `onLimits` (sin gastar nada más). */
+async function withLimits(promise, onLimits) {
+  const { data, response } = await promise.withResponse();
+  const l = limitsFrom(response?.headers);
+  if (l) onLimits?.(l);
+  return data;
+}
+
 /** Traduce un error del SDK (o de red) a un error HTTP propio. Nunca copia el texto del proveedor. */
 export function translateError(e) {
   if (e instanceof Groq.APIConnectionTimeoutError || e?.name === 'AbortError') return providerError('timeout');
   if (e instanceof Groq.APIConnectionError) return providerError('network');
   const st = e?.status;
-  if (st === 429) return providerError('rate');
+  if (st === 429) {
+    const h = e?.headers;
+    const get = (k) => (typeof h?.get === 'function' ? h.get(k) : h?.[k]);
+    const ra = parseDuration(get('retry-after')) ?? parseDuration(get('x-ratelimit-reset-tokens')) ?? parseDuration(get('x-ratelimit-reset-requests'));
+    return providerError('rate', { retryAfter: ra != null ? Math.max(1, Math.ceil(ra)) : undefined });
+  }
   if (st === 401 || st === 403) return providerError('auth');
   if (typeof st === 'number') return providerError('other');
   return providerError('network');
@@ -63,7 +112,7 @@ export function translateError(e) {
  * Pide una respuesta JSON al modelo. `cfg`: { apiKey, model, baseUrl, timeoutMs } (de config.mjs).
  * Si el modelo no admite response_format, se reintenta una vez sin él. Devuelve { json, model }.
  */
-export async function chatJson({ cfg, messages, maxTokens = 4000, temperature = 0.3 }) {
+export async function chatJson({ cfg, messages, maxTokens = 4000, temperature = 0.3, onLimits }) {
   if (!cfg?.apiKey) throw httpError(503, 'Falta configurar la clave de IA.', { code: 'AI_DISABLED' });
   const client = new Groq({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl || DEFAULT_BASE_URL, timeout: cfg.timeoutMs || DEFAULT_TIMEOUT_MS, maxRetries: 0 });
   const base = { model: cfg.model || DEFAULT_MODEL, messages, temperature, max_completion_tokens: maxTokens, stream: false };
@@ -71,33 +120,35 @@ export async function chatJson({ cfg, messages, maxTokens = 4000, temperature = 
   let res;
   try {
     try {
-      res = await client.chat.completions.create({ ...base, response_format: { type: 'json_object' } });
+      res = await withLimits(client.chat.completions.create({ ...base, response_format: { type: 'json_object' } }), onLimits);
     } catch (e) {
-      if (e?.status === 400 && /response_format|json_object|json mode/i.test(String(e?.message || ''))) res = await client.chat.completions.create(base);
+      if (e?.status === 400 && /response_format|json_object|json mode/i.test(String(e?.message || ''))) res = await withLimits(client.chat.completions.create(base), onLimits);
       else throw e;
     }
   } catch (e) {
+    onLimits?.(limitsFrom(e?.headers));
     throw translateError(e);
   }
   const json = extractJson(res?.choices?.[0]?.message?.content);
   if (!json) throw providerError('format');
-  return { json, model: base.model };
+  return { json, model: base.model, usage: usageOf(res?.usage) };
 }
 
 /** Llamada con herramientas (tool-calling). Devuelve el mensaje del asistente (content y/o tool_calls). */
-export async function chatWithTools({ cfg, messages, tools, maxTokens = 3000, temperature = 0.2, signal }) {
+export async function chatWithTools({ cfg, messages, tools, maxTokens = 1800, temperature = 0.2, signal, onLimits }) {
   if (!cfg?.apiKey) throw httpError(503, 'Falta configurar la clave de IA.', { code: 'AI_DISABLED' });
   const client = new Groq({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl || DEFAULT_BASE_URL, timeout: cfg.timeoutMs || DEFAULT_TIMEOUT_MS, maxRetries: 0 });
   const model = cfg.model || DEFAULT_MODEL;
   const body = { model, messages, tools, tool_choice: 'auto', temperature, max_completion_tokens: maxTokens, stream: false };
   if (/^openai\/gpt-oss/.test(model)) body.reasoning_effort = 'low';
   try {
-    const res = await client.chat.completions.create(body, signal ? { signal } : undefined);
+    const res = await withLimits(client.chat.completions.create(body, signal ? { signal } : undefined), onLimits);
     const msg = res?.choices?.[0]?.message;
     if (!msg) throw providerError('format');
-    return { message: msg, model };
+    return { message: msg, model, usage: usageOf(res?.usage) };
   } catch (e) {
-    if (e?.statusCode) throw e; // ya traducido
+    if (e?.statusCode) throw e;
+    onLimits?.(limitsFrom(e?.headers)); // ya traducido
     if (e?.status === 400) throw httpError(502, 'El modelo no pudo usar las herramientas del asistente. Prueba con las acciones rápidas o reformula la petición.', { code: 'AI_TOOLS_FAILED' });
     throw translateError(e);
   }
@@ -107,7 +158,7 @@ export async function chatWithTools({ cfg, messages, tools, maxTokens = 3000, te
  * Igual que chatWithTools pero con streaming (stream:true): `onDelta(texto)` recibe el texto a medida que llega y
  * `onReset()` avisa si, tras haber enviado texto, el modelo empieza a pedir herramientas (ese texto era un preámbulo).
  */
-export async function chatWithToolsStream({ cfg, messages, tools, maxTokens = 3000, temperature = 0.2, signal, onDelta, onReset }) {
+export async function chatWithToolsStream({ cfg, messages, tools, maxTokens = 1800, temperature = 0.2, signal, onDelta, onReset, onLimits }) {
   if (!cfg?.apiKey) throw httpError(503, 'Falta configurar la clave de IA.', { code: 'AI_DISABLED' });
   const client = new Groq({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl || DEFAULT_BASE_URL, timeout: cfg.timeoutMs || DEFAULT_TIMEOUT_MS, maxRetries: 0 });
   const model = cfg.model || DEFAULT_MODEL;
@@ -117,9 +168,11 @@ export async function chatWithToolsStream({ cfg, messages, tools, maxTokens = 30
   let streamed = 0;
   let sawCall = false;
   const calls = [];
+  let usage = null;
   try {
-    const stream = await client.chat.completions.create(body, signal ? { signal } : undefined);
+    const stream = await withLimits(client.chat.completions.create(body, signal ? { signal } : undefined), onLimits);
     for await (const chunk of stream) {
+      usage = usageOf(chunk?.x_groq?.usage ?? chunk?.usage) ?? usage;
       const d = chunk?.choices?.[0]?.delta;
       if (!d) continue;
       if (Array.isArray(d.tool_calls)) {
@@ -140,9 +193,10 @@ export async function chatWithToolsStream({ cfg, messages, tools, maxTokens = 30
     }
   } catch (e) {
     if (e?.statusCode) throw e;
+    onLimits?.(limitsFrom(e?.headers));
     if (e?.status === 400) throw httpError(502, 'El modelo no pudo usar las herramientas del asistente. Prueba con las acciones rápidas o reformula la petición.', { code: 'AI_TOOLS_FAILED' });
     throw translateError(e);
   }
   const list = calls.filter(Boolean);
-  return { message: { role: 'assistant', content: content || null, ...(list.length ? { tool_calls: list } : {}) }, model };
+  return { message: { role: 'assistant', content: content || null, ...(list.length ? { tool_calls: list } : {}) }, model, usage };
 }

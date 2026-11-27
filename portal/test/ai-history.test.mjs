@@ -40,8 +40,7 @@ test('streaming SSE: meta → activity → proposal (ya validada) → delta → 
   assert.deepEqual(act, ['list_outline:start', 'list_outline:done', 'propose_create_page:start', 'propose_create_page:done']);
   assert.match(r.events.find((e) => e.event === 'activity').data.label, /Consultando las secciones/);
   const deltas = r.events.filter((e) => e.event === 'delta').map((e) => e.data.text).join('');
-  assert.equal(deltas, 'Propongo crear la página «Nueva» en Inicio.');
-  assert.ok(r.events.filter((e) => e.event === 'delta').length > 1, 'el texto llega en trozos');
+  assert.match(deltas, /Te propongo crear «Nueva»/, 'resumen del servidor: la propuesta cierra el turno sin llamada final');
   const done = r.events.at(-1).data;
   assert.equal(done.reply, deltas);
   assert.equal(done.proposals.length, 1);
@@ -49,6 +48,17 @@ test('streaming SSE: meta → activity → proposal (ya validada) → delta → 
   assert.ok(done.conversation_id > 0 && done.message_id > 0);
   assert.ok(!r.body.includes(SENTINEL));
   assert.equal(h.fake.calls[0].body.stream, true);
+});
+
+test('streaming de texto: llega en trozos y el usage del proveedor queda registrado', async () => {
+  h.reset();
+  h.fake.script = [say('Hay seis secciones: Tareas, Guía, Problemas, Preguntas, Referencia y Conceptos.')];
+  const r = await h.stream(msg('qué secciones hay'));
+  const deltas = r.events.filter((e) => e.event === 'delta');
+  assert.ok(deltas.length > 3, 'el texto llega en trozos');
+  assert.equal(r.events.at(-1).data.reply, deltas.map((e) => e.data.text).join(''));
+  const a = (await h.pool.query("SELECT detail FROM audit_log WHERE action = 'ai.chat' ORDER BY id DESC LIMIT 1")).rows[0].detail;
+  assert.ok(a.prompt_tokens > 100 && a.completion_tokens > 5, 'tokens del turno en la auditoría (solo cifras)');
 });
 
 test('streaming: una propuesta maliciosa NO se envía (se valida en el servidor antes) y se informa en done.rejected', async () => {
@@ -72,7 +82,7 @@ test('errores: antes de empezar a transmitir son JSON normales (400/401/403/503)
   assert.equal(rate.status, 200);
   const err = rate.events.find((e) => e.event === 'error').data;
   assert.equal(err.status, 429);
-  assert.equal(err.code, 'AI_RATE_LIMIT');
+  assert.equal(err.code, 'AI_PROVIDER_LIMIT');
   assert.ok(!rate.body.includes(SENTINEL));
   h.reset();
   h.fake.mode = 'auth';

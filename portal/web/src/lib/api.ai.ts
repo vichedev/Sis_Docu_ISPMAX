@@ -1,6 +1,7 @@
 /* API del asistente de IA (servidor: portal/server/routes/ai.mjs). Nunca recibe ni devuelve la clave guardada. */
 import { ApiError, UNAUTH_EVENT, request } from './api';
 import { apiUrl } from './apiBase';
+import type { AiUsage } from '@/features/ai/aiModel';
 
 export type AssistAction = 'rewrite' | 'shorten' | 'expand' | 'fix' | 'steps' | 'custom';
 export interface AiStatus { enabled: boolean; configured: boolean; model: string }
@@ -23,6 +24,9 @@ export const aiApi = {
   /** `apiKey` solo viaja al guardar; el servidor la cifra y no la devuelve. */
   saveConfig: (b: { apiKey?: string; model?: string; enabled?: boolean; clearKey?: boolean }) => request<AiConfig>('PUT', '/api/ai/config', b),
   test: (b: { apiKey?: string; model?: string } = {}) => request<AiTestResult>('POST', '/api/ai/test', b),
+  usage: () => request<AiUsage>('GET', '/api/ai/usage'),
+  /** Actualizar a petición: una llamada mínima (max_tokens = 1) solo para leer las cabeceras de límite. */
+  usageRefresh: () => request<AiUsage>('POST', '/api/ai/usage/refresh', {}),
   chat: (b: { messages: ChatMessage[]; context?: ChatContext }, signal?: AbortSignal) => request<ChatResponse>('POST', '/api/ai/chat', b, undefined, signal),
   conversations: (f: { q?: string; limit?: number; offset?: number } = {}) => {
     const p = new URLSearchParams();
@@ -49,10 +53,10 @@ export interface MoveProposal {
   to: { seccion: string; grupo: string; parentId: number | null; parentTitle: string | null }; payload: { seccion?: string; grupo?: string; parent_id?: number | null }; motivo: string;
 }
 export type Proposal = CreateProposal | EditProposal | MoveProposal;
-export interface ChatContext { page?: { id: number; title: string; route: string; seccion: string; body?: string }; selection?: { type: string; text: string }; mentions?: { id: number; title: string; route: string }[] }
+export interface ChatContext { page?: { id: number; title: string; route: string; seccion: string; body?: string }; selection?: { type: string; text: string }; mentions?: { id: number; title: string; route: string }[]; attachments?: { ref: string; path: string; name: string; caption: string; alt: string; size: string; where: string }[] }
 export interface ChatMessage { role: 'user' | 'assistant'; content: string }
 export interface ChatChoices { question: string; options: { label: string; value: string }[] }
-export interface ChatResponse { reply: string; proposals: Proposal[]; rejected: { kind: string; reason: string }[]; choices: ChatChoices | null; incomplete: boolean; model: string; conversation_id: number | null; message_id: number | null }
+export interface ChatResponse { reply: string; proposals: Proposal[]; rejected: { kind: string; reason: string }[]; choices: ChatChoices | null; incomplete: boolean; model: string; conversation_id: number | null; message_id: number | null; usage?: AiUsage }
 export interface ChatBody { messages: ChatMessage[]; context?: ChatContext; conversation_id?: number | null; regenerate?: boolean }
 /** Evento del stream SSE de POST /api/ai/chat. */
 export type ChatEvent =

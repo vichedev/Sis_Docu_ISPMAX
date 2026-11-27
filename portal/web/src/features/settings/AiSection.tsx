@@ -10,6 +10,8 @@ import { aiApi, type AiTestResult } from '@/lib/api.ai';
 import { errText } from '@/lib/auth';
 import { useAsync } from '@/lib/hooks';
 import { AI_CONFIG_EVENT } from '@/features/ai/useAiStatus';
+import { useAiUsage } from '@/features/ai/useAiUsage';
+import { UsageDetail } from '@/features/ai/AiUsageMeter';
 
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
@@ -23,6 +25,7 @@ export function AiSection() {
   const [fail, setFail] = useState('');
   const [test, setTest] = useState<AiTestResult | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const usage = useAiUsage(true);
   useEffect(() => { if (data) { setModel(data.model); setActive(data.active); } }, [data]);
 
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -77,6 +80,9 @@ export function AiSection() {
             <datalist id="ai-modelos">{data.suggestedModels.map((m) => <option key={m} value={m} />)}</datalist></>}
         </Field>
 
+        <div className="rounded-lg border border-line bg-subtle p-3"><h3 className="mb-2 mt-0 text-[13.5px] font-semibold">Consumo de la IA</h3>
+          <UsageDetail usage={usage.usage} fetchedAt={usage.fetchedAt} now={usage.now} busy={usage.busy} error={usage.error} onRefresh={() => void usage.refresh()} /></div>
+
         {fail && <Callout tone="danger"><strong>No se pudo.</strong> {fail}</Callout>}
         {test && (test.ok
           ? <Callout tone="ok" icon={<CircleCheck size={16} className="mt-0.5" />}><strong>Conexión correcta.</strong> El modelo {test.model} respondió en {((test.ms ?? 0) / 1000).toFixed(1)} s.</Callout>
@@ -88,7 +94,7 @@ export function AiSection() {
           <span className="flex-1" />
           {data.source === 'ajustes' && <Button size="sm" variant="danger-ghost" disabled={!!busy} onClick={() => setConfirmClear(true)}><Trash2 size={14} /> Quitar clave</Button>}
         </div>
-        <p className="m-0 flex items-start gap-1.5 text-sm text-ink-3"><KeyRound size={14} className="mt-0.5 shrink-0" /> El texto que envías al asistente (el bloque o tus notas) sale a Groq para generar la propuesta. Nunca se envían contraseñas ni datos de acceso: no los pegues en las notas. Límite: {data.rate} peticiones por persona cada 10 minutos.</p>
+        <p className="m-0 flex items-start gap-1.5 text-sm text-ink-3"><KeyRound size={14} className="mt-0.5 shrink-0" /> Plan gratuito de Groq: ~8.000 tokens por minuto; si lo alcanzas, espera unos segundos. El texto que envías al asistente (el bloque o tus notas) sale a Groq para generar la propuesta. Nunca se envían contraseñas ni datos de acceso: no los pegues en las notas. Límite: {data.rate} peticiones por persona cada 10 minutos.</p>
       </FieldStack>
       <ConfirmDialog open={confirmClear} onOpenChange={setConfirmClear} danger confirmLabel="Quitar clave" title="Quitar la clave de IA" onConfirm={clear}>
         Se borra la clave guardada en Ajustes. {data.configured && data.source === 'ajustes' ? 'Si el servidor tiene su propia clave (archivo .env) se usará esa; si no, el asistente quedará deshabilitado.' : ''}

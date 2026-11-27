@@ -279,7 +279,7 @@ test('asistente: getOutline/list_outline incluye los grupos vacíos con su nombr
   const outline = await loadOutline(ctx);
   const con = outline.find((s) => s.key === 'conceptos');
   assert.deepEqual(con.grupos.find((g) => g.name === 'Ideas vacías'), { name: 'Ideas vacías', pages: [] });
-  assert.match(outlineText(outline), /grupo "Ideas vacías": /);
+  assert.match(outlineText(outline), /«Ideas vacías» \(0\)/); // formato compacto del prompt de la IA
   const guia = outline.find((s) => s.key === 'guia');
   assert.ok(guia.grupos.some((g) => g.name === '🌱 COMIENZO'), 'nombre exacto con emoji');
 });

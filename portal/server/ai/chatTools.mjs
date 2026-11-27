@@ -7,9 +7,9 @@ import { resolveGroup } from '../routes/groups.mjs';
 import { mdxSecurityProblems } from '../routes/mdxSafety.mjs';
 import { validatePage } from '../routes/validate.mjs';
 import { TIPOS } from '../routes/pages.mjs';
-import { BlockSchema, TIPOS_IA, rawTexts, renderBlock, mdxProblems, strayTags, rejected, oneLine } from './output.mjs';
-import { CHAT_LIMITS } from './prompts.mjs';
-import { loadOutline, outlineText, buildCreateProposal, applyOps, changedHunk } from './proposals.mjs';
+import { BlockSchema, TIPOS_IA, rawTexts, renderBlock, mdxProblems, strayTags, rejected, oneLine, resolveImages, ImageError } from './output.mjs';
+import { CHAT_LIMITS, CHAT_BUDGET } from './prompts.mjs';
+import { loadOutline, outlineCompact, groupPagesText, buildCreateProposal, applyOps, changedHunk } from './proposals.mjs';
 
 const str = (n) => z.string().max(n);
 const pageRef = z.union([z.number().int().positive(), str(300)]);
@@ -29,34 +29,66 @@ const Op = z.discriminatedUnion('op', [
 const EditArgs = z.object({ page: pageRef, ops: z.array(Op).min(1).max(10), motivo: str(400).nullish() });
 const MoveArgs = z.object({ page: pageRef, seccion: z.enum(SECCION_KEYS).optional(), grupo: str(120).optional(), new_group: z.boolean().optional(), parent_id: z.number().int().positive().nullable().optional(), motivo: str(400).nullish() });
 const SearchArgs = z.object({ query: z.string().trim().min(2).max(200) });
-const ReadArgs = z.object({ page: pageRef });
+const ReadArgs = z.object({ page: pageRef, offset: z.number().int().min(0).optional() });
+const ListArgs = z.object({ seccion: z.enum(SECCION_KEYS).optional(), grupo: str(120).optional() });
 const ChoiceArgs = z.object({ question: str(300), options: z.array(z.union([str(80), z.object({ label: str(80), value: str(200).optional() })])).min(2).max(8) });
 
-const blockSchemaDoc = 'Bloques: {type:"lead",text} · {type:"heading",level:2|3,text} · {type:"paragraph",text} · {type:"list",ordered,items[]} · {type:"steps",steps:[{title,text}]} · {type:"callout",kind:"tip|info|warning|danger",title,text} · {type:"table",header[],rows[][]} · {type:"code",lang,code}. Texto en Markdown en línea, sin HTML ni llaves.';
-const pageProp = { description: 'id numérico de la página o su ruta (por ejemplo /guia/inicio/clientes)', anyOf: [{ type: 'integer' }, { type: 'string' }] };
-const blocksProp = { type: 'array', items: { type: 'object' }, description: blockSchemaDoc };
+const pageProp = { anyOf: [{ type: 'integer' }, { type: 'string' }], description: 'id o ruta' };
+const blocksProp = { type: 'array', items: { type: 'object' }, description: 'bloques: {type:lead|paragraph,text} {type:heading,level:2|3,text} {type:list,ordered,items[]} {type:steps,steps:[{title,text}]} {type:callout,kind:tip|info|warning|danger,title,text} {type:table,header[],rows[][]} {type:code,lang,code}' };
+const fn = (name, description, properties, required = []) => ({ type: 'function', function: { name, description, parameters: { type: 'object', properties, ...(required.length ? { required } : {}) } } });
 
+// Definiciones MÍNIMAS: se reenvían en cada llamada al modelo (cuestan tokens). Los detalles van en el prompt y en los errores.
 const BASE_TOOL_DEFS = [
-  { type: 'function', function: { name: 'list_outline', description: 'Lista las secciones del manual con sus módulos, grupos y páginas (id y título). Úsala antes de proponer ubicación o mover.', parameters: { type: 'object', properties: {}, additionalProperties: false } } },
-  { type: 'function', function: { name: 'search_pages', description: 'Busca páginas por título, ruta o texto. Devuelve id, título, ruta y estado.', parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'], additionalProperties: false } } },
-  { type: 'function', function: { name: 'read_page', description: 'Lee el cuerpo y los datos de una página (el cuerpo se trunca). Úsala antes de proponer una edición.', parameters: { type: 'object', properties: { page: pageProp }, required: ['page'], additionalProperties: false } } },
-  { type: 'function', function: { name: 'propose_create_page', description: `Propone una página NUEVA (se creará como borrador solo si la persona la aprueba). Con usar_plantilla=true el servidor pone la estructura base del tipo y no hacen falta bloques; si no, da blocks. ${blockSchemaDoc}`, parameters: { type: 'object', properties: { title: { type: 'string' }, slug: { type: 'string' }, description: { type: 'string' }, tipo: { type: 'string', enum: TIPOS_IA }, seccion: { type: 'string', enum: SECCION_KEYS }, modulo: { type: 'string', description: 'obligatorio en tareas' }, grupo: { type: 'string', description: 'Nombre EXACTO de un grupo EXISTENTE de la sección, copiado de list_outline (con su emoji si lo tiene). Un grupo que no existe se rechaza salvo que pongas new_group=true' }, new_group: { type: 'boolean', description: 'true SOLO si la persona pidió expresamente crear un grupo nuevo; el servidor lo rechaza si ya existe uno con ese nombre' }, parent_id: { type: 'integer', description: 'id de la página padre (subsección)' }, motivo: { type: 'string', description: 'por qué va ahí' }, usar_plantilla: { type: 'boolean' }, blocks: blocksProp }, required: ['title', 'tipo', 'seccion'], additionalProperties: false } } },
-  { type: 'function', function: { name: 'propose_edit_page', description: 'Propone cambios en una página existente con operaciones sobre su texto: replace (find exacto y único → replace), delete (find), insert_after (anchor exacto y único + blocks) y append (blocks al final). No cambia nada hasta que la persona aprueba.', parameters: { type: 'object', properties: { page: pageProp, ops: { type: 'array', items: { type: 'object', properties: { op: { type: 'string', enum: ['replace', 'delete', 'insert_after', 'append'] }, find: { type: 'string' }, replace: { type: 'string' }, anchor: { type: 'string' }, blocks: blocksProp } , required: ['op'] } }, motivo: { type: 'string' } }, required: ['page', 'ops'], additionalProperties: false } } },
-  { type: 'function', function: { name: 'ask_choice', description: 'Haz una pregunta aclaratoria con respuestas rápidas que la persona puede pulsar (por ejemplo los grupos existentes de una sección). Úsala cuando falte un dato (sección, grupo, tipo, página). Tras llamarla, NO propongas nada más en este turno.', parameters: { type: 'object', properties: { question: { type: 'string' }, options: { type: 'array', items: { type: 'string' }, description: 'de 2 a 8 opciones cortas, con valores reales (nombres exactos de grupos o páginas)' } }, required: ['question', 'options'], additionalProperties: false } } },
-  { type: 'function', function: { name: 'propose_move_page', description: 'Propone mover una página a otra sección, grupo o página padre (se coloca al final). parent_id null la devuelve al nivel principal.', parameters: { type: 'object', properties: { page: pageProp, seccion: { type: 'string', enum: SECCION_KEYS }, grupo: { type: 'string', description: 'Nombre EXACTO de un grupo existente (de list_outline)' }, new_group: { type: 'boolean' }, parent_id: { type: ['integer', 'null'] }, motivo: { type: 'string' } }, required: ['page'], additionalProperties: false } } },
+  fn('list_outline', 'Páginas de un grupo (id, título). Sin argumentos: la estructura.', { seccion: { type: 'string' }, grupo: { type: 'string' } }),
+  fn('search_pages', 'Busca páginas por título, ruta o texto.', { query: { type: 'string' } }, ['query']),
+  fn('read_page', 'Lee un trozo del texto de una página.', { page: pageProp, offset: { type: 'integer', description: 'carácter inicial' } }, ['page']),
+  fn('propose_create_page', 'Propone una página nueva (borrador, la persona aprueba).', {
+    title: { type: 'string' }, tipo: { type: 'string', enum: TIPOS_IA }, seccion: { type: 'string', enum: SECCION_KEYS }, grupo: { type: 'string', description: 'nombre EXACTO de un grupo existente' },
+    new_group: { type: 'boolean', description: 'solo si la persona pidió un grupo nuevo' }, modulo: { type: 'string' }, parent_id: { type: 'integer' }, slug: { type: 'string' }, description: { type: 'string' },
+    motivo: { type: 'string' }, usar_plantilla: { type: 'boolean' }, blocks: blocksProp,
+  }, ['title', 'tipo', 'seccion']),
+  fn('propose_edit_page', 'Propone cambios de texto en una página: replace(find único exacto→replace), delete(find), insert_after(anchor, blocks), append(blocks).', {
+    page: pageProp, ops: { type: 'array', items: { type: 'object', properties: { op: { type: 'string', enum: ['replace', 'delete', 'insert_after', 'append'] }, find: { type: 'string' }, replace: { type: 'string' }, anchor: { type: 'string' }, blocks: { type: 'array', items: { type: 'object' } } }, required: ['op'] } }, motivo: { type: 'string' },
+  }, ['page', 'ops']),
+  fn('propose_move_page', 'Propone mover una página a otra sección, grupo o página padre.', { page: pageProp, seccion: { type: 'string', enum: SECCION_KEYS }, grupo: { type: 'string' }, new_group: { type: 'boolean' }, parent_id: { type: ['integer', 'null'] }, motivo: { type: 'string' } }, ['page']),
+  fn('ask_choice', 'Pregunta aclaratoria con respuestas rápidas (2 a 8 opciones con valores reales). Después no propongas nada más.', { question: { type: 'string' }, options: { type: 'array', items: { type: 'string' } } }, ['question', 'options']),
 ];
+export const TOOL_DEFS = BASE_TOOL_DEFS;
 
-/** Definiciones de herramientas de este turno: propose_create_page lista los grupos reales de cada sección. */
-export function buildToolDefs(outline) {
-  const groups = (outline ?? []).map((s) => `${s.key}: ${s.grupos.map((g) => '«' + g.name + '»').join(', ') || '(sin grupos)'}`).join(' | ').slice(0, 1800);
-  return BASE_TOOL_DEFS.map((d) => {
+const READ_TOOLS = ['list_outline', 'search_pages', 'read_page', 'ask_choice'];
+/**
+ * Herramientas relevantes para este turno (cada una cuesta tokens en CADA llamada). Se decide con el último mensaje y los
+ * dos anteriores (así «Inicio» tras «¿en qué grupo la creo?» sigue siendo crear). Si no se reconoce nada y hay página abierta,
+ * se ofrece editar; si no, solo lectura.
+ */
+const RE_CREATE = /cre[ae]|nuev[ao]|añad|agreg|escrib|plantilla|borrador|redact|genera/;
+const RE_EDIT = /edit|mejor|cambi|corrig|revis|acort|expand|reescrib|actualiz|quit|elimin|borra|reemplaz|sustitu|complet|pul[ei]r|redacci/;
+const RE_MOVE = /mov|trasla|pasa |pasar|acomod|reubic|ordena|ubica/;
+/** Editar la página abierta no necesita la estructura del manual en el prompt (se ahorran ~600 tokens por llamada). */
+export function needsOutline(recentText, hasPage) {
+  const t = String(recentText ?? '').toLowerCase();
+  return !(hasPage && RE_EDIT.test(t) && !RE_CREATE.test(t) && !RE_MOVE.test(t));
+}
+export function selectTools(recentText, hasPage) {
+  const t = String(recentText ?? '').toLowerCase();
+  const want = new Set(READ_TOOLS);
+  if (RE_CREATE.test(t)) want.add('propose_create_page');
+  if (RE_EDIT.test(t)) want.add('propose_edit_page');
+  if (RE_MOVE.test(t)) want.add('propose_move_page');
+  if (want.size === READ_TOOLS.length && hasPage) want.add('propose_edit_page');
+  return BASE_TOOL_DEFS.filter((d) => want.has(d.function.name));
+}
+/** Con imágenes adjuntas, los bloques admiten image_ref (la IA no ve las imágenes ni inventa rutas). */
+export function withImageDocs(tools) {
+  return tools.map((d) => {
     if (d.function.name !== 'propose_create_page') return d;
-    const fn = JSON.parse(JSON.stringify(d.function));
-    fn.description += ` Grupos existentes por sección (usa estos nombres EXACTOS): ${groups}`;
-    return { ...d, function: fn };
+    const c = JSON.parse(JSON.stringify(d));
+    c.function.parameters.properties.blocks.description += ' {type:image,image_ref:imgN,alt,caption,size:full|medium|small}';
+    return c;
   });
 }
-export const TOOL_DEFS = BASE_TOOL_DEFS;
+/** Compatibilidad: todas las herramientas. */
+export const buildToolDefs = () => BASE_TOOL_DEFS;
 
 const activityLabel = (name, a) => ({
   list_outline: 'Consultando las secciones del manual',
@@ -82,6 +114,11 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
   let choice = null;
   let calls = 0;
   const proposals = [];
+  // Imágenes adjuntas por la persona (ya verificadas contra la BD por la ruta): ref → { path, alt, caption, size, width, height }.
+  const attMap = new Map((context?.attachments ?? []).map((x) => [x.ref, x]));
+  const resolveImgs = (blocks) => {
+    try { return resolveImages(blocks, attMap); } catch (e) { if (e instanceof ImageError) fail(e.message); throw e; }
+  };
   const rejectedList = [];
   const MAX_PROPOSALS = 5;
   const addProposal = (p) => { proposals.push(p); onEvent({ type: 'proposal', proposal: p }); };
@@ -103,8 +140,16 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
   const capCheck = () => { if (proposals.length >= MAX_PROPOSALS) fail(`Ya hay ${MAX_PROPOSALS} propuestas en este turno; pide al usuario que continúe en otro mensaje.`); };
 
   const tools = {
-    async list_outline() {
-      return outlineText(await loadOutline(ctx), 8000);
+    async list_outline(args) {
+      const a = ListArgs.safeParse(args ?? {});
+      if (!a.success) fail(zerr(a.error));
+      const secs = await loadOutline(ctx);
+      if (a.data.grupo) {
+        const txt = groupPagesText(secs, { seccion: a.data.seccion, grupo: a.data.grupo, max: CHAT_BUDGET.groupPages });
+        if (!txt) fail('No existe ese grupo. Grupos: ' + outlineCompact(secs, 1500));
+        return txt;
+      }
+      return outlineCompact(secs, CHAT_BUDGET.outlineChars);
     },
     async search_pages(args) {
       const a = SearchArgs.safeParse(args);
@@ -112,10 +157,10 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
       const q = a.data.query;
       const like = '%' + escapeLike(q) + '%';
       const r = await db.query(
-        `SELECT id, title, route, seccion, grupo, status FROM pages WHERE deleted_at IS NULL AND seccion <> 'raiz'
+        `SELECT id, title, route, status FROM pages WHERE deleted_at IS NULL AND seccion <> 'raiz'
            AND (title ILIKE $1 OR route ILIKE $1 OR to_tsvector('spanish', title || ' ' || description || ' ' || body) @@ websearch_to_tsquery('spanish', $2))
-         ORDER BY (title ILIKE $1) DESC, id LIMIT 8`, [like, q]);
-      return JSON.stringify({ results: r.rows });
+         ORDER BY (title ILIKE $1) DESC, id LIMIT 6`, [like, q]);
+      return r.rows.length ? r.rows.map((p) => `[${p.id}] ${p.title.slice(0, 50)} ${p.route}${p.status === 'draft' ? ' (borrador)' : ''}`).join('\n') : 'Sin resultados.';
     },
     async read_page(args) {
       const a = ReadArgs.safeParse(args);
@@ -123,8 +168,9 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
       const p = await resolve(a.data.page);
       const isOpen = open && open.id === p.id;
       const body = isOpen && typeof open.body === 'string' ? open.body : p.body;
-      const cut = body.length > 6000;
-      return JSON.stringify({ id: p.id, title: p.title, route: p.route, seccion: p.seccion, grupo: p.grupo, status: p.status, description: p.description, es_la_pagina_abierta: !!isOpen, body: cut ? body.slice(0, 6000) : body, truncado: cut });
+      const from = Math.min(a.data.offset ?? 0, body.length);
+      const text = body.slice(from, from + CHAT_BUDGET.readWindow);
+      return JSON.stringify({ id: p.id, title: p.title, route: p.route, status: p.status, abierta: !!isOpen, total: body.length, desde: from, texto: text, ...(from + text.length < body.length ? { sigue: from + text.length } : {}) });
     },
     async propose_create_page(args) {
       capCheck();
@@ -142,12 +188,13 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
         let blocksMdx;
         if (useTemplate) blocksMdx = TIPOS[d.tipo].body();
         else {
-          for (const b of d.blocks) {
+          const res = resolveImgs(d.blocks);
+          for (const b of res.blocks) {
             const own = mdxSecurityProblems({ body: rawTexts(b) });
             if (own.length) throw rejected(`incluye contenido no permitido (${own[0].message.slice(0, 120)})`);
           }
-          blocksMdx = d.blocks.map(renderBlock).join('\n\n') + '\n';
-          const problems = await mdxProblems(blocksMdx);
+          blocksMdx = res.blocks.map(renderBlock).join('\n\n') + '\n';
+          const problems = await mdxProblems(blocksMdx, { allowedRefs: res.figureTags });
           if (problems.length) throw rejected(problems[0].slice(0, 200));
         }
         // Grupo: SIEMPRE contra los existentes de la sección. Uno nuevo solo con new_group=true (y nunca si ya existe).
@@ -183,8 +230,14 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
       if (before.length > 200_000) fail('La página es demasiado grande para editarla desde el asistente.');
       try {
         const allowed = new Set([...before.matchAll(/<(Figure|FigRow|FigGrid|Tour|SearchTerms)\b[^>]*>/g)].map((m) => m[0]));
+        // Imágenes de todas las operaciones juntas (una referencia no se repite en la propuesta); la IA solo puede poner las adjuntas.
+        const flat = a.data.ops.flatMap((o) => o.blocks ?? []);
+        const res = resolveImgs(flat);
+        res.figureTags.forEach((t) => allowed.add(t));
+        let k = 0;
         const ops = [];
-        for (const op of a.data.ops) {
+        for (const op0 of a.data.ops) {
+          const op = op0.blocks ? { ...op0, blocks: res.blocks.slice(k, (k += op0.blocks.length)) } : op0;
           if (op.op === 'replace') {
             const problems = await mdxProblems(op.replace || ' ', { allowedRefs: allowed });
             if (problems.length) throw rejected(problems[0].slice(0, 200));
@@ -198,7 +251,7 @@ export function createToolbox({ ctx, context, onEvent = () => {} }) {
               if (stray.length) throw rejected(`incluye HTML en bruto (<${stray[0]}>) que no se permite`);
             }
             const mdx = op.blocks.map(renderBlock).join('\n\n');
-            const problems = await mdxProblems(mdx + '\n');
+            const problems = await mdxProblems(mdx + '\n', { allowedRefs: allowed });
             if (problems.length) throw rejected(problems[0].slice(0, 200));
             ops.push({ ...op, mdx });
           }

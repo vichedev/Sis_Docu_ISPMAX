@@ -362,7 +362,7 @@ export function PageEditor({ id, actions, onOpenTree }: { id: number; actions: R
         </ul>
         {!isAdmin && <p className="mt-3 text-sm text-ink-3">Solo una persona administradora puede publicar con errores.</p>}
       </Dialog>
-      {canEdit && <AiAssistantSheet open={aiOpen} onOpenChange={setAiOpen} editor={blocksRef} page={{ id: page.id, title: form.title || page.title, route: page.route, seccion: page.seccion, status: page.status }} getBody={() => form.body} onApplyBody={(b) => set('body', b)} model={ai.status?.model} />}
+      {canEdit && <AiAssistantSheet open={aiOpen} onOpenChange={setAiOpen} editor={blocksRef} page={{ id: page.id, title: form.title || page.title, route: page.route, seccion: page.seccion, status: page.status }} getBody={() => form.body} onApplyBody={(b) => set('body', b)} model={ai.status?.model} imageFolder={folder || undefined} />}
       {canAct && <AiDraftDialog open={aiDraftOpen} onOpenChange={setAiDraftOpen} />}
       <ImagePicker open={!!picker} onOpenChange={(o) => { if (!o) { picker?.(null); setPicker(null); } }} onSelect={(a) => { picker?.(a); setPicker(null); }} />
       <Dialog open={conflict} onOpenChange={setConflict} title="Otra persona guardó esta página" footer={<>

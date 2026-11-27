@@ -49,12 +49,13 @@ test('REGRESIÓN del usuario: «tipo plantilla en la zona de inicio, llamada tes
   assert.equal(p.newGroup, false);
   assert.equal(p.usesTemplate, true);
   assert.equal(p.route, '/guia/test-de-vice');
-  assert.match(toolMsgs(1)[0], /nombre EXACTO/);
-  assert.match(toolMsgs(1)[0], /grupo "🚀 INICIO": \[\d+\] Introducción · \[\d+\] Acceso y navegación/);
+  const sys = h.fake.calls[0].body.messages[0].content;
+  assert.match(sys, /nombre EXACTO/);
+  assert.match(sys, /- guia \(Guía\): «🚀 INICIO» \(2\), «💰 FINANZAS» \(1\)/, 'los nombres exactos van en la estructura compacta del prompt');
+  assert.match(toolMsgs(1)[0], /«🚀 INICIO» \(2\)/);
   assert.equal((await h.pool.query('SELECT count(*)::int AS n FROM pages')).rows[0].n, before, 'proponer no crea nada');
   // el modelo ve los nombres reales en la definición de la herramienta
   const def = h.fake.calls[0].body.tools.find((t) => t.function.name === 'propose_create_page').function;
-  assert.match(def.description, /guia: «🚀 INICIO», «💰 FINANZAS»/);
   assert.match(def.parameters.properties.grupo.description, /EXACTO/);
   // «Crear borrador»: lo que hace el panel (con el nombre que sea, incluso el escrito a mano)
   const c = await h.req('POST', '/api/pages', { cookie: h.ck.editor, payload: { seccion: 'guia', slug: p.slug, title: p.title, tipo: 'guia', grupo: 'INICIO' } });
@@ -111,9 +112,9 @@ test('grupo nuevo: solo con new_group=true; si el nombre normalizado ya existe s
 
 test('mover con la IA: el grupo se resuelve igual (existente → canónico; inexistente → error)', async () => {
   h.reset();
-  h.fake.script = [tc('propose_move_page', { page: ids.pagos, grupo: 'inicio' }), tc('propose_move_page', { page: ids.pagos, grupo: 'Inventado' }), say('ok')];
+  h.fake.script = [tc('propose_move_page', { page: ids.pagos, grupo: 'Inventado' }), tc('propose_move_page', { page: ids.pagos, grupo: 'inicio' }), say('ok')];
   const r = await chat('mueve pagos a inicio');
   assert.equal(r.json.proposals.length, 1);
   assert.equal(r.json.proposals[0].payload.grupo, EMOJI);
-  assert.match(toolMsgs(2)[1], /No existe el grupo «Inventado»/);
+  assert.match(toolMsgs(1)[0], /No existe el grupo «Inventado»/);
 });

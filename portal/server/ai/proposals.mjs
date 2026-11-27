@@ -2,7 +2,7 @@
 // Nada de aquí escribe en la BD: solo lee y valida. Quien aplica es el panel, con las rutas de páginas de siempre.
 import { SECCIONES, SECCION_KEYS, checkSlug, buildRoute } from '../routes/util.mjs';
 import { TIPOS } from '../routes/pages.mjs';
-import { resolveGroup } from '../routes/groups.mjs';
+import { resolveGroup, normName } from '../routes/groups.mjs';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,99}$/;
 
@@ -35,17 +35,31 @@ export async function loadOutline(ctx) {
   });
 }
 
-/** Versión compacta para el prompt y para la herramienta list_outline (acotada). */
-export function outlineText(secs, max = 9000) {
-  const lines = ['Los nombres de grupo van tal cual (con su emoji si lo tienen): al proponer ubicación copia el nombre EXACTO de un grupo existente.'];
-  for (const s of secs) {
-    lines.push(`- seccion "${s.key}" (${s.label})${s.modulos.length ? `; módulos: ${s.modulos.slice(0, 40).join(', ')}` : ''}`);
-    for (const g of s.grupos.slice(0, 30)) {
-      const pages = g.pages.slice(0, 12).map((p) => `[${p.id}] ${p.title.slice(0, 60)}`).join(' · ');
-      lines.push(`    grupo "${g.name || '(sin grupo)'}": ${pages}${g.pages.length > 12 ? ` … (+${g.pages.length - 12})` : ''}`);
-    }
-  }
+/**
+ * Estructura COMPACTA (la que va al prompt): una línea por sección con los nombres exactos de sus grupos y el nº de páginas.
+ * Los títulos de las páginas no van aquí (cuestan miles de tokens): se piden por grupo con groupPagesText.
+ */
+export function outlineCompact(secs, max = 3000) {
+  const lines = secs.map((s) => {
+    const gs = s.grupos.map((g) => `«${g.name || '(sin grupo)'}» (${g.pages.length})`).join(', ');
+    const mod = s.modulos.length ? `; módulos: ${s.modulos.slice(0, 12).join(', ')}` : '';
+    return `- ${s.key} (${s.label}): ${gs || '(sin grupos)'}${mod}`;
+  });
   return lines.join('\n').slice(0, max).replace(/<<<DOCUMENTO|DOCUMENTO>>>/g, '');
+}
+export const outlineText = outlineCompact;
+
+/** Páginas de UN grupo (id y título), con tope. `seccion` es opcional (se busca en todas). */
+export function groupPagesText(secs, { seccion, grupo, max = 30 } = {}) {
+  const n = normName(grupo);
+  for (const s of secs) {
+    if (seccion && s.key !== seccion) continue;
+    const g = s.grupos.find((x) => normName(x.name) === n);
+    if (!g) continue;
+    const list = g.pages.slice(0, max).map((p) => `[${p.id}] ${p.title.slice(0, 50)}${p.status === 'draft' ? ' (borrador)' : ''}`).join('\n');
+    return `${s.key} › «${g.name}» (${g.pages.length} páginas):\n${list}${g.pages.length > max ? `\n… (+${g.pages.length - max})` : ''}`;
+  }
+  return null;
 }
 
 /**

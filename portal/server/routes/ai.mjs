@@ -11,12 +11,13 @@ import {
 } from './util.mjs';
 import { TIPOS } from './pages.mjs';
 import { createAiConfig, validModel, SUGGESTED_MODELS } from '../ai/config.mjs';
-import { loadOutline, outlineText, buildCreateProposal } from '../ai/proposals.mjs';
-import { createToolbox, buildToolDefs } from '../ai/chatTools.mjs';
+import { loadOutline, outlineText, outlineCompact, buildCreateProposal } from '../ai/proposals.mjs';
+import { createToolbox, selectTools, needsOutline, withImageDocs } from '../ai/chatTools.mjs';
+import { createBudget, budgetKey, estimateTokens, tpmLimit, MAX_AUTO_WAIT_S, MAX_RETRY_WAIT_S } from '../ai/budget.mjs';
 import { createHistory, autoTitle, historyDays } from '../ai/history.mjs';
 import { PassThrough } from 'node:stream';
-import { CHAT_LIMITS, chatSystem } from '../ai/prompts.mjs';
-import { chatJson, chatWithTools, chatWithToolsStream, translateError } from '../ai/groq.mjs';
+import { CHAT_LIMITS, CHAT_BUDGET, chatSystem, compactMessages } from '../ai/prompts.mjs';
+import { chatJson, chatWithTools, chatWithToolsStream, translateError, providerLimitError } from '../ai/groq.mjs';
 import { ACTIONS, LIMITS, assistMessages, draftMessages } from '../ai/prompts.mjs';
 import { checkAssistOutput, checkDraftOutput } from '../ai/output.mjs';
 
@@ -41,6 +42,15 @@ export function createRateLimiter({ max = 20, windowMs = 10 * 60_000, now = () =
       return { ok: true };
     },
   };
+}
+
+/** Respuesta resumida cuando el turno termina con propuestas (evita una llamada final al modelo solo para resumir la tarjeta). */
+export function synthReply(props) {
+  if (props.length > 1) return 'Preparé ' + props.length + ' propuestas. Revísalas y aplica las que quieras.';
+  const p = props[0];
+  if (p.kind === 'create') return 'Te propongo crear «' + p.title + '» en ' + p.route + ' como borrador. Revisa la tarjeta, ajusta lo que quieras y pulsa «Crear borrador».';
+  if (p.kind === 'edit') return 'Te propongo estos cambios en «' + p.page.title + '». Revisa el cambio y pulsa «Aplicar».';
+  return 'Te propongo mover «' + p.page.title + '». Revisa y pulsa «Aplicar».';
 }
 
 export function parseRate(env = process.env) {
@@ -75,7 +85,7 @@ export function registerAiRoutes(app, ctx) {
     const r = limiter.hit(request.user.id);
     if (!r.ok) {
       reply.header('Retry-After', String(r.retryAfter));
-      throw httpError(429, `Llegaste al límite de uso de la IA (${parseRate()} peticiones cada 10 minutos). Inténtalo en ${Math.ceil(r.retryAfter / 60)} min.`, { code: 'AI_RATE_LIMIT', retryAfter: r.retryAfter });
+      throw httpError(429, `Llegaste al límite de uso del asistente del portal (${parseRate()} peticiones cada 10 minutos). Inténtalo en ${Math.ceil(r.retryAfter / 60)} min.`, { code: 'AI_RATE_LIMIT', retryAfter: r.retryAfter });
     }
   }
   const text = (v, campo, max, { vacio = false } = {}) => {
@@ -172,14 +182,16 @@ export function registerAiRoutes(app, ctx) {
     useQuota(request, reply);
     const t0 = Date.now();
     let result;
+    let tok = {};
     try {
-      const r = await chatJson({ cfg, messages: assistMessages({ action: b.action, text: body, instruction, context }) });
+      const r = await chatJson({ cfg, messages: assistMessages({ action: b.action, text: body, instruction, context }), onLimits: noteLimits(bkeyOf(cfg)) });
+      if (r.usage) { budget.record(bkeyOf(cfg), r.usage.total); tok = { prompt_tokens: r.usage.prompt, completion_tokens: r.usage.completion }; }
       result = { ...(await checkAssistOutput(r.json, { input: body })), model: r.model };
     } catch (e) {
       await audit(request.user.id, 'ai.error', `assist:${b.action}`, { code: e.extra?.code ?? 'error', chars_in: body.length });
       throw e;
     }
-    await audit(request.user.id, 'ai.assist', b.action, { chars_in: body.length, chars_out: result.text.length, model: result.model, ms: Date.now() - t0 });
+    await audit(request.user.id, 'ai.assist', b.action, { chars_in: body.length, chars_out: result.text.length, model: result.model, ms: Date.now() - t0, ...tok });
     return result;
   });
 
@@ -200,7 +212,8 @@ export function registerAiRoutes(app, ctx) {
     let proposal;
     let model;
     try {
-      const r = await chatJson({ cfg, maxTokens: 6000, messages: draftMessages({ description, outline: outlineText(secs), parentHint }) });
+      const r = await chatJson({ cfg, maxTokens: 6000, messages: draftMessages({ description, outline: outlineText(secs), parentHint }), onLimits: noteLimits(bkeyOf(cfg)) });
+      if (r.usage) budget.record(bkeyOf(cfg), r.usage.total);
       model = r.model;
       proposal = await buildCreateProposal(ctx, { ...(await checkDraftOutput(r.json)), usesTemplate: false });
     } catch (e) {
@@ -248,52 +261,166 @@ export function registerAiRoutes(app, ctx) {
         return { id, title: text(m.title, 'mention.title', 200, { vacio: true }), route: text(m.route, 'mention.route', 300, { vacio: true }) };
       });
     }
+    if (c.attachments !== undefined) {
+      if (!Array.isArray(c.attachments) || c.attachments.length > 12) throw httpError(400, 'Imágenes adjuntas no válidas (máx. 12).');
+      const seen = new Set();
+      context.attachments = c.attachments.map((x) => {
+        if (!isPlainObject(x) || typeof x.ref !== 'string' || !/^img\d{1,2}$/.test(x.ref) || seen.has(x.ref)) throw httpError(400, 'Imagen adjunta no válida.');
+        seen.add(x.ref);
+        if (typeof x.path !== 'string' || x.path.length > 250 || !/^[a-z0-9][a-z0-9/_.-]*$/.test(x.path) || x.path.includes('..') || x.path.includes('//')) throw httpError(400, 'Ruta de imagen no válida.');
+        if (x.size !== undefined && !['full', 'medium', 'small'].includes(x.size)) throw httpError(400, 'Ancho de imagen no válido.');
+        return { ref: x.ref, path: x.path, name: text(x.name, 'attachment.name', 120, { vacio: true }), caption: text(x.caption, 'attachment.caption', 300, { vacio: true }), alt: text(x.alt, 'attachment.alt', 300, { vacio: true }), size: x.size, where: text(x.where, 'attachment.where', 120, { vacio: true }) };
+      });
+    }
     let conversationId = null;
     if (b.conversation_id !== undefined && b.conversation_id !== null) conversationId = parseId(b.conversation_id, 'conversation_id');
     return { messages, context, conversationId, regenerate: b.regenerate === true, stream: b.stream === true };
   }
 
+  // ---- consumo de tokens del proveedor: presupuesto local (ventana de 60 s) + última lectura de las cabeceras de Groq
+  const tpm = tpmLimit();
+  const budget = createBudget({ limit: tpm });
+  const lastLimits = new Map(); // clave (huella) -> { ...limits, at }
+  const bkeyOf = (cfg) => budgetKey(cfg.apiKey);
+  /** Lo que se sabe del consumo (sin la clave): lectura del proveedor si la hay y, si no, la cuenta local. */
+  function usageView(key) {
+    const now = Date.now();
+    const l = lastLimits.get(key);
+    const used = budget.used(key);
+    let out = { tpm, localUsed: used, available: false };
+    if (l) {
+      const left = l.resetInSec != null ? Math.max(0, Math.ceil(l.resetInSec - (now - l.at) / 1000)) : null;
+      const fresh = left === null || left > 0; // pasado el reinicio, el cupo vuelve a estar entero
+      out = {
+        ...out, available: true, source: 'proveedor', tokensLimit: l.tokensLimit ?? tpm,
+        tokensRemaining: fresh ? (l.tokensRemaining ?? null) : (l.tokensLimit ?? tpm), resetInSec: fresh ? left : 0,
+        requestsLimit: l.requestsLimit, requestsRemaining: l.requestsRemaining, updatedAt: new Date(l.at).toISOString(),
+      };
+    } else if (used > 0) {
+      out = { ...out, available: true, source: 'local', tokensLimit: tpm, tokensRemaining: Math.max(0, tpm - used), resetInSec: budget.waitFor(key, tpm) || null, requestsLimit: null, requestsRemaining: null, updatedAt: new Date().toISOString() };
+    }
+    return out;
+  }
+  /** Segundos que hay que esperar antes de una llamada de `need` tokens (el mayor entre la cuenta local y la lectura del proveedor). */
+  function waitSeconds(key, need) {
+    let w = budget.waitFor(key, need);
+    const l = lastLimits.get(key);
+    if (l?.tokensRemaining != null && l.resetInSec != null) {
+      const left = l.resetInSec - (Date.now() - l.at) / 1000;
+      if (left > 0 && l.tokensRemaining < need) w = Math.max(w, Math.ceil(left));
+    }
+    return w;
+  }
+  const noteLimits = (key) => (l) => { if (l) lastLimits.set(key, { ...l, at: Date.now() }); };
+  const sleepAbortable = (s, signal) => new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, Math.max(0, s) * 1000);
+    signal?.addEventListener('abort', () => { clearTimeout(t); reject(new Error('cancelado')); }, { once: true });
+  });
+
+  app.get('/api/ai/usage', editorGet, async () => {
+    const c = await cfgStore.resolve();
+    return c.apiKey ? usageView(bkeyOf(c)) : { available: false, tpm };
+  });
+  /** Actualizar a petición de la persona: una llamada mínima (max_tokens = 1) solo para leer las cabeceras. */
+  app.post('/api/ai/usage/refresh', { preHandler: requireRole('editor'), bodyLimit: 1024 }, async (request, reply) => {
+    const cfg = await requireEnabled();
+    useQuota(request, reply);
+    const key = bkeyOf(cfg);
+    try {
+      const r = await chatJson({ cfg, maxTokens: 1, temperature: 0, messages: [{ role: 'user', content: 'Responde {"ok":1} en JSON.' }], onLimits: noteLimits(key) });
+      if (r.usage) budget.record(key, r.usage.total);
+    } catch (e) {
+      if (e.extra?.code !== 'AI_FORMAT' && e.extra?.code !== 'AI_BAD_RESPONSE') throw e; // con max_tokens=1 el JSON sale cortado: solo importan las cabeceras
+    }
+    return usageView(key);
+  });
+
   /** Bucle de herramientas de un turno. `emit(tipo, datos)` recibe los eventos en vivo (activity, delta, reset, proposal, choices). */
   async function runChat({ cfg, messages, context, ctl, stream, emit }) {
+    const key = bkeyOf(cfg);
     const outline = await loadOutline(ctx);
     const toolbox = createToolbox({ ctx, context, onEvent: (ev) => {
       if (ev.type === 'activity') emit('activity', { id: ev.id, tool: ev.tool, label: ev.label, state: ev.state });
       else if (ev.type === 'proposal') emit('proposal', { proposal: ev.proposal });
       else if (ev.type === 'choices') emit('choices', ev.choice);
     } });
-    const tools = buildToolDefs(outline);
-    const msgs = [{ role: 'system', content: chatSystem(context) }, ...messages];
+    const hist = compactMessages(messages);
+    const recent = hist.slice(-3).map((m) => m.content).join(' ');
+    let tools = selectTools(recent, !!context.page);
+    if (context.attachments?.length) tools = withImageDocs(tools);
+    const msgs = [{ role: 'system', content: chatSystem(context, needsOutline(recent, !!context.page) ? outlineCompact(outline, CHAT_BUDGET.outlineChars) : '') }, ...hist];
     const t0 = Date.now();
     let finalText = '';
     let model = cfg.model;
     let steps = 0;
     let incomplete = false;
-    const call = () => (stream
-      ? chatWithToolsStream({ cfg, messages: msgs, tools, signal: ctl.signal, onDelta: (t) => emit('delta', { text: t }), onReset: () => emit('reset', {}) })
-      : chatWithTools({ cfg, messages: msgs, tools, signal: ctl.signal }));
+    let retried = false;
+    let waits = 0;
+    const tokens = { prompt: 0, completion: 0 };
+    const waitStep = async (secs) => {
+      const id = 9000 + ++waits;
+      emit('activity', { id, tool: 'wait', label: 'Esperando cupo de la IA', state: 'start' });
+      await sleepAbortable(secs, ctl.signal);
+      emit('activity', { id, tool: 'wait', label: 'Esperando cupo de la IA', state: 'done' });
+    };
+    const callOnce = () => (stream
+      ? chatWithToolsStream({ cfg, messages: msgs, tools, maxTokens: CHAT_BUDGET.maxOutput, signal: ctl.signal, onLimits: noteLimits(key), onDelta: (t) => emit('delta', { text: t }), onReset: () => emit('reset', {}) })
+      : chatWithTools({ cfg, messages: msgs, tools, maxTokens: CHAT_BUDGET.maxOutput, signal: ctl.signal, onLimits: noteLimits(key) }));
+    /** Una llamada al modelo con presupuesto: espera cupo si hace falta (máx. 8 s), reintenta UNA vez un 429 corto del proveedor. */
+    const callModel = async () => {
+      const need = estimateTokens(msgs) + estimateTokens(tools) + 300;
+      const w = waitSeconds(key, need);
+      if (w > MAX_AUTO_WAIT_S) throw providerLimitError(w);
+      if (w > 0) await waitStep(w);
+      for (;;) {
+        try {
+          const r = await callOnce();
+          const u = r.usage ?? { prompt: estimateTokens(msgs) + estimateTokens(tools), completion: estimateTokens(r.message) };
+          budget.record(key, u.total ?? u.prompt + u.completion);
+          tokens.prompt += u.prompt;
+          tokens.completion += u.completion;
+          return r;
+        } catch (e) {
+          const ra = e.extra?.retryAfter;
+          if (e.extra?.code === 'AI_PROVIDER_LIMIT' && !retried && ra && ra <= MAX_RETRY_WAIT_S) { retried = true; await waitStep(ra); continue; }
+          throw e;
+        }
+      }
+    };
     for (let i = 0; ; i++) {
       if (i >= CHAT_LIMITS.toolIterations || Date.now() - t0 > CHAT_LIMITS.totalMs) { incomplete = true; break; }
       let r;
       try {
-        r = await call();
+        r = await callModel();
       } catch (e) {
         if (e.extra?.code !== 'AI_TOOLS_FAILED' || i > 0 || steps > 0) throw e;
-        r = await call(); // un reintento: gpt-oss a veces falla al formar la llamada
+        r = await callModel(); // un reintento: gpt-oss a veces falla al formar la llamada
       }
       model = r.model;
       const calls = Array.isArray(r.message.tool_calls) ? r.message.tool_calls : [];
       if (!calls.length) { finalText = typeof r.message.content === 'string' ? r.message.content : ''; break; }
       msgs.push({ role: 'assistant', content: r.message.content ?? null, tool_calls: calls.map((c) => ({ id: c.id, type: 'function', function: { name: c.function?.name, arguments: c.function?.arguments ?? '{}' } })) });
+      const before = toolbox.proposals.length;
+      const results = [];
       for (const c of calls.slice(0, 4)) {
         steps++;
-        msgs.push({ role: 'tool', tool_call_id: c.id, content: await toolbox.run(c.function?.name, c.function?.arguments) });
+        const out = await toolbox.run(c.function?.name, c.function?.arguments);
+        results.push({ name: c.function?.name, out });
+        msgs.push({ role: 'tool', tool_call_id: c.id, content: out });
       }
       if (toolbox.choice) { finalText = typeof r.message.content === 'string' && r.message.content.trim() ? r.message.content : toolbox.choice.question; break; } // pregunta aclaratoria: el turno termina
+      // Propuestas registradas sin errores: el turno termina aquí (ahorra la llamada final al modelo, que solo resumiría la tarjeta).
+      if (results.length && results.every((x) => /^propose_/.test(x.name ?? '') && !x.out.startsWith('Error')) && toolbox.proposals.length > before) {
+        const said = typeof r.message.content === 'string' && r.message.content.trim();
+        finalText = said ? r.message.content : synthReply(toolbox.proposals);
+        if (!said) emit('delta', { text: finalText });
+        break;
+      }
     }
     const props = toolbox.proposals;
     let replyText = finalText.trim().slice(0, 4000);
     if (!replyText) replyText = incomplete ? (props.length ? 'Preparé las propuestas de abajo. Revísalas antes de aplicarlas.' : 'No pude terminar: la petición necesitó demasiados pasos. Pídemelo de forma más concreta.') : (props.length ? 'Preparé las propuestas de abajo. Revísalas antes de aplicarlas.' : 'No tengo una respuesta para eso. ¿Puedes darme más detalle?');
-    return { reply: replyText, proposals: props, rejected: toolbox.rejected, choices: toolbox.choice, incomplete, model, steps, ms: Date.now() - t0 };
+    return { reply: replyText, proposals: props, rejected: toolbox.rejected, choices: toolbox.choice, incomplete, model, steps, ms: Date.now() - t0, tokens, usage: usageView(key) };
   }
 
   app.post('/api/ai/chat', chatRoute, async (request, reply) => {
@@ -306,6 +433,15 @@ export function registerAiRoutes(app, ctx) {
     if (context.mentions?.length) { // los datos de las menciones salen de la BD, no del cliente
       const m = await db.query('SELECT id, title, route FROM pages WHERE id = ANY($1) AND deleted_at IS NULL', [context.mentions.map((x) => x.id)]);
       context.mentions = m.rows;
+    }
+    if (context.attachments?.length) { // solo imágenes que ESTA persona subió (las ajenas o inexistentes se rechazan)
+      const r = await db.query('SELECT path, width, height, updated_by FROM assets WHERE path = ANY($1)', [context.attachments.map((x) => x.path)]);
+      const by = new Map(r.rows.map((x) => [x.path, x]));
+      context.attachments = context.attachments.map((x) => {
+        const row = by.get(x.path);
+        if (!row || row.updated_by !== uid) throw httpError(400, 'La imagen «' + x.ref + '» no existe o no la subiste tú.');
+        return { ...x, width: row.width, height: row.height };
+      });
     }
     const ctl = new AbortController();
     const charsIn = messages.reduce((n, m) => n + m.content.length, 0);
@@ -321,8 +457,8 @@ export function registerAiRoutes(app, ctx) {
         if (e.statusCode === 413) throw e;
         console.error('[ai] no se pudo guardar el historial:', e.message);
       }
-      await audit(uid, 'ai.chat', null, { chars_in: charsIn, chars_out: out.reply.length, tools: out.steps, proposals: out.proposals.length, rejected: out.rejected.length, incomplete: out.incomplete, model: out.model, ms: out.ms });
-      return { reply: out.reply, proposals: out.proposals, rejected: out.rejected, choices: out.choices, incomplete: out.incomplete, model: out.model, conversation_id: convId, message_id: messageId };
+      await audit(uid, 'ai.chat', null, { chars_in: charsIn, chars_out: out.reply.length, tools: out.steps, proposals: out.proposals.length, rejected: out.rejected.length, incomplete: out.incomplete, model: out.model, ms: out.ms, prompt_tokens: out.tokens.prompt, completion_tokens: out.tokens.completion, ...(context.attachments?.length ? { images: context.attachments.length } : {}) });
+      return { reply: out.reply, proposals: out.proposals, rejected: out.rejected, choices: out.choices, incomplete: out.incomplete, model: out.model, conversation_id: convId, message_id: messageId, usage: out.usage };
     };
     const failed = (e) => audit(uid, 'ai.error', 'chat', { code: e.extra?.code ?? 'error', chars_in: charsIn });
 
@@ -368,7 +504,20 @@ export function registerAiRoutes(app, ctx) {
     reply.code(201);
     return c;
   });
-  app.get('/api/ai/conversations/:id', hGet, async (request) => history.open(request.user.id, parseId(request.params.id)));
+  app.get('/api/ai/conversations/:id', hGet, async (request) => {
+    const r = await history.open(request.user.id, parseId(request.params.id));
+    // Las imágenes no se guardan en el historial (solo su ruta dentro de la propuesta): si se eliminaron después, la tarjeta lo indica.
+    const paths = new Set();
+    for (const m of r.messages) for (const p of m.proposals ?? []) for (const x of JSON.stringify(p).matchAll(/\/assets\/([a-z0-9][a-z0-9/_.-]*\.webp)/g)) paths.add(x[1]);
+    if (paths.size) {
+      const ex = new Set((await db.query('SELECT path FROM assets WHERE path = ANY($1)', [[...paths]])).rows.map((x) => x.path));
+      for (const m of r.messages) for (const p of m.proposals ?? []) {
+        const miss = [...new Set([...JSON.stringify(p).matchAll(/\/assets\/([a-z0-9][a-z0-9/_.-]*\.webp)/g)].map((x) => x[1]))].filter((x) => !ex.has(x));
+        if (miss.length) p.missingImages = miss;
+      }
+    }
+    return r;
+  });
   app.put('/api/ai/conversations/:id', hWrite, async (request) => {
     const title = text(request.body?.title, 'title', 120).trim();
     if (!title) throw httpError(400, 'El título no puede estar vacío.');

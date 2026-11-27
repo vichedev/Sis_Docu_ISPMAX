@@ -42,6 +42,7 @@ process.env.PORTAL_DATA_DIR = path.join(RUN, 'data');
 process.env.GROQ_API_KEY = '';
 process.env.GROQ_MODEL = '';
 process.env.PORTAL_AI_RATE = '1000';
+process.env.PORTAL_AI_TPM = '1000000'; // sin esperas por presupuesto salvo en las pruebas que lo piden
 process.env.GROQ_TIMEOUT_MS = '1500';
 
 const SENTINEL = 'gsk_CENTINELA_9f3c1a77b2e84d5aa0c1';
@@ -312,7 +313,7 @@ test('assist: entrada validada (acción, tamaño, instrucción) y errores del pr
   fake.mode = 'rate';
   let r = await p(A());
   assert.equal(r.status, 429);
-  assert.match(r.json.error, /límite de uso de la IA; inténtalo en unos minutos/);
+  assert.match(r.json.error, /plan gratuito/);
   fake.mode = 'auth';
   r = await p(A());
   assert.equal(r.status, 502); // nunca 401: el panel lo tomaría por sesión caducada
@@ -427,7 +428,7 @@ test('draft-page: ubicación normalizada (módulo faltante, padre inexistente, s
   const r2 = await req('POST', '/api/ai/draft-page', { cookie: ck.editor, payload: { description: 'detalle', parent: g } });
   assert.equal(r2.json.proposal.parentId, g);
   assert.match(lastCall().body.messages[1].content, /Clientes \(\/guia\/clientes\)/);
-  assert.match(lastCall().body.messages[0].content, /seccion "guia"/);
+  assert.match(lastCall().body.messages[0].content, /- guia \(Guía\):/);
   assert.equal((await req('POST', '/api/ai/draft-page', { cookie: ck.editor, payload: { description: 'x', parent: 424242 } })).status, 404);
 });
 

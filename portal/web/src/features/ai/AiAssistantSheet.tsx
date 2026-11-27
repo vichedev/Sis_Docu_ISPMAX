@@ -7,7 +7,7 @@
  *  - Preguntas aclaratorias con respuestas rápidas clicables. Atajos «/» y «@». Historial guardado (solo del usuario).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CircleAlert, Copy, History, MessageSquarePlus, RefreshCw, SendHorizonal, Square, Sparkles } from 'lucide-react';
+import { CircleAlert, Copy, History, MessageSquarePlus, Paperclip, RefreshCw, SendHorizonal, Square, Sparkles } from 'lucide-react';
 import { Badge, Button, Callout, IconButton, Sheet, Skeleton, Textarea, useToast } from '@/components/ui';
 import { ApiError, api, type PageRow } from '@/lib/api';
 import { aiApi, streamChat, type ChatEvent, type CreateProposal, type EditProposal, type MoveProposal, type OutlineSection, type Proposal } from '@/lib/api.ai';
@@ -20,6 +20,10 @@ import { ASSIST_ACTIONS, CHAT_LIMITS, NON_TEXT_BLOCKS, activeMentions, aiErrorIn
 import { applyEditOther, applyMove, createDraft } from './applyActions';
 import { ActivityLine, CardShell, CreateCard, DiffPane, EditCard, Md, MoveCard } from './AiParts';
 import { AiHistory } from './AiHistory';
+import { UsageMeterButton } from './AiUsageMeter';
+import { AiImageTray } from './AiImageTray';
+import { MAX_IMAGES, buildFigureMdx, captionFromName, toContext, type Attachment } from './imageModel';
+import { useAiUsage } from './useAiUsage';
 
 const BLOCK_NAME: Record<string, string> = {
   heading: 'Título', paragraph: 'Párrafo', list: 'Lista', steps: 'Pasos', callout: 'Aviso', cards: 'Tarjetas', table: 'Tabla', code: 'Código', kicker: 'Subtítulo', lead: 'Entradilla', raw: 'Bloque de código MDX',
@@ -28,9 +32,11 @@ type Sel = { id: string; type: string; mdx: string };
 type Mention = { id: number; title: string; route: string };
 type Menu = { kind: 'cmd'; options: { key: string; label: string; hint: string }[] } | { kind: 'mention'; options: { key: string; label: string; hint: string; page: Mention }[] };
 
-export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, onApplyBody, model }: {
+export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, onApplyBody, model, imageFolder }: {
   open: boolean; onOpenChange: (o: boolean) => void; editor?: React.RefObject<BlockEditorHandle | null>;
   page?: { id: number; title: string; route: string; seccion: string; status?: string } | null; getBody?: () => string; onApplyBody?: (body: string) => void; model?: string;
+  /** Carpeta de assets de la página abierta (imageFolder del editor); sin ella, «imgs/ia». */
+  imageFolder?: string;
 }) {
   const toast = useToast();
   const { user } = useAuth();
@@ -45,6 +51,10 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
   const [mentionList, setMentionList] = useState<Mention[]>([]);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [menuIdx, setMenuIdx] = useState(0);
+  const usage = useAiUsage(open);
+  const [images, setImages] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
   const idRef = useRef(0);
   const endRef = useRef<HTMLDivElement>(null);
@@ -98,7 +108,7 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
     if (!t || busy) return;
     if (t.length > CHAT_LIMITS.message) { toast(`El mensaje es demasiado largo (máx. ${CHAT_LIMITS.message} caracteres).`, 'error'); return; }
     const base = opts.base ?? items;
-    const withUser: ChatItem[] = opts.reuseUser ? base : [...base, { id: nid(), kind: 'user', text: t }];
+    const withUser: ChatItem[] = opts.reuseUser ? base : [...base, { id: nid(), kind: 'user', text: t, ...(images.length ? { images: images.map((a) => ({ path: a.path, name: a.name })) } : {}) }];
     const actId = nid();
     const asstId = nid();
     setItems([...withUser, { id: actId, kind: 'activity', steps: [] }, { id: asstId, kind: 'assistant', text: '', streaming: true }]);
@@ -124,6 +134,7 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
       } else if (ev.type === 'done') {
         const d = ev.data;
         if (d.conversation_id) setConvId(d.conversation_id);
+        usage.setFromServer(d.usage);
         setItems((l) => l.map((x) => {
           if (x.id === asstId && x.kind === 'assistant') return { ...x, text: d.reply, streaming: false, messageId: d.message_id, choices: d.choices, rejected: d.rejected.length ? d.rejected : undefined };
           if (x.kind === 'proposal' && propIds.includes(x.id)) return { ...x, messageId: d.message_id };
@@ -132,7 +143,7 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
       } else if (ev.type === 'error') fail(ev.data.status, ev.data.message, { code: ev.data.code, retryAfter: ev.data.retryAfter });
     };
     try {
-      await streamChat({ messages: buildHistory(withUser), context: buildContext(page, body, sel, activeMentions(t, mentionList)), conversation_id: convId, regenerate: opts.regenerate }, onEvent, ctl.signal);
+      await streamChat({ messages: buildHistory(withUser), context: { ...buildContext(page, body, sel, activeMentions(t, mentionList)), ...(images.length ? { attachments: toContext(images) } : {}) }, conversation_id: convId, regenerate: opts.regenerate }, onEvent, ctl.signal);
     } catch (e) {
       if (ctl.signal.aborted) add({ id: nid(), kind: 'note', text: 'La persona canceló la petición.' });
       else if (e instanceof ApiError) fail(e.status, e.message, e.data);
@@ -163,7 +174,37 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
   };
 
   const cancel = () => abort.current?.abort();
-  const reset = () => { abort.current?.abort(); setItems([]); setInput(''); setBusy(null); setConvId(null); setMentionList([]); setView('chat'); };
+  const reset = () => { abort.current?.abort(); setImages([]); setItems([]); setInput(''); setBusy(null); setConvId(null); setMentionList([]); setView('chat'); };
+
+  /** Sube las imágenes con el almacén de siempre (POST /api/assets) y las deja en la bandeja. La IA no las recibe: solo su texto. */
+  const addFiles = async (files: File[]) => {
+    const imgs = files.filter((x) => x.type.startsWith('image/'));
+    if (!imgs.length) { if (files.length) toast('Solo se pueden adjuntar imágenes', 'error'); return; }
+    const room = Math.max(0, MAX_IMAGES - images.length);
+    if (imgs.length > room) toast(`Máximo ${MAX_IMAGES} imágenes por mensaje`, 'info');
+    const take = imgs.slice(0, room);
+    setUploading((n) => n + take.length);
+    const added: Attachment[] = [];
+    for (const x of take) {
+      try {
+        const r = await api.uploadAsset(x, imageFolder ?? 'imgs/ia');
+        added.push({ uid: r.path + '#' + Math.random().toString(36).slice(2, 6), path: r.path, name: x.name || 'imagen', width: r.width, height: r.height, caption: captionFromName(x.name || ''), alt: '', size: 'full', where: '' });
+      } catch (e) { toast(`${x.name}: ${errText(e)}`, 'error'); } finally { setUploading((n) => n - 1); }
+    }
+    if (added.length) setImages((l) => [...l, ...added].slice(0, MAX_IMAGES));
+  };
+  /** MODO MANUAL (sin IA, sin tokens): coloca las imágenes en el orden y con los parámetros dados, como bloques Figure. */
+  const insertManual = () => {
+    const h = editor?.current;
+    if (!h?.insertMdx?.(buildFigureMdx(images))) { toast('No se pudo insertar: abre una página editable en el editor', 'error'); return; }
+    const n = images.length;
+    toast(`${n} ${n === 1 ? 'imagen insertada' : 'imágenes insertadas'} en la página`, 'ok', { label: 'Deshacer', run: () => h.undo?.() });
+    add({ id: nid(), kind: 'note', text: `Se insertaron ${n} ${n === 1 ? 'imagen' : 'imágenes'} en la página (sin IA).` });
+    setImages([]);
+  };
+  const suggestImages = () => void runTurn(page
+    ? 'Edita esta página: coloca las imágenes adjuntas donde tengan más sentido (con image_ref), con un pie corto y texto alternativo. Si falta algo, dímelo.'
+    : 'Crea una página nueva que use las imágenes adjuntas, con un orden lógico, pies cortos y texto alternativo. Pregunta lo que necesites.');
 
   const savedState = (it: Extract<ChatItem, { kind: 'proposal' }>, state: 'applied' | 'discarded', openPageId?: number) => {
     if (it.messageId != null && it.index != null) void aiApi.proposalState(it.messageId, it.index, state, openPageId).catch(() => {});
@@ -267,15 +308,21 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
   const renderProposal = (it: Extract<ChatItem, { kind: 'proposal' }>) => {
     const p = it.proposal as Proposal;
     const common = { state: it.state, error: it.error, applying: applying === it.id, onDiscard: () => discard(it), onAskChanges: () => askChanges(p) };
-    if (p.kind === 'create') return <CreateCard proposal={p} outline={outline} {...common} openPageId={it.openPageId} expired={it.expired} onApply={(d) => void applyCreate(it, d)} onOpen={() => { onOpenChange(false); go(`/contenido/${it.openPageId}`); }} />;
-    if (p.kind === 'edit') return <EditCard proposal={p} {...common} expired={it.expired} onApply={() => void applyOther(it)} />;
+    const missing = (it.proposal as { missingImages?: string[] }).missingImages;
+    if (p.kind === 'create') return <CreateCard proposal={p} outline={outline} {...common} openPageId={it.openPageId} expired={it.expired} missing={missing} onApply={(d) => void applyCreate(it, d)} onOpen={() => { onOpenChange(false); go(`/contenido/${it.openPageId}`); }} />;
+    if (p.kind === 'edit') return <EditCard proposal={p} {...common} expired={it.expired} missing={missing} onApply={() => void applyOther(it)} />;
     return <MoveCard proposal={p as MoveProposal} {...common} onApply={() => void applyOther(it)} />;
   };
 
   const lastAsstId = (() => { for (let i = items.length - 1; i >= 0; i--) { const x = items[i]!; if (x.kind === 'assistant') return x.id; } return -1; })();
   const renderItem = (it: ChatItem) => {
     switch (it.kind) {
-      case 'user': return <div key={it.id} className="ml-8 self-end whitespace-pre-wrap break-words rounded-lg bg-accent-soft px-3 py-2 text-[13.5px] text-ink">{it.text}</div>;
+      case 'user': return (
+        <div key={it.id} className="ml-8 flex flex-col gap-1.5 self-end rounded-lg bg-accent-soft px-3 py-2 text-[13.5px] text-ink">
+          <span className="whitespace-pre-wrap break-words">{it.text}</span>
+          {it.images && it.images.length > 0 && <span className="flex flex-wrap gap-1" aria-label="Imágenes adjuntas">{it.images.map((im, i) => <img key={i} src={api.assetUrl(im.path)} alt="" title={im.name} width={36} height={36} className="size-9 rounded-sm border border-line object-cover" />)}</span>}
+        </div>
+      );
       case 'activity': return <ActivityLine key={it.id} steps={it.steps} running={!!busy} />;
       case 'assistant': return (
         <div key={it.id} className="mr-6 flex flex-col gap-1.5">
@@ -325,9 +372,10 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} side="right" title="Asistente de IA" className="w-[min(580px,calc(100vw-24px))]">
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col" onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }} onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); void addFiles(Array.from(e.dataTransfer.files)); } }}>
         <div className="flex items-center gap-1 border-b border-line px-3 py-1.5 text-sm text-ink-3">
           <span className="min-w-0 flex-1 truncate">{page ? <>Página abierta: <b className="font-medium text-ink-2">{page.title}</b></> : 'Sin página abierta'}{model && <span className="ml-2 font-mono text-[11px] text-ink-4">{model}</span>}</span>
+          <UsageMeterButton usage={usage.usage} fetchedAt={usage.fetchedAt} now={usage.now} busy={usage.busy} error={usage.error} onRefresh={() => void usage.refresh()} />
           <Button size="sm" variant="ghost" aria-pressed={view === 'history'} onClick={() => setView((v) => (v === 'history' ? 'chat' : 'history'))}><History size={14} /> Historial</Button>
           <Button size="sm" variant="ghost" disabled={!items.length && !busy && !convId} onClick={reset}><MessageSquarePlus size={14} /> Nueva</Button>
         </div>
@@ -362,12 +410,20 @@ export function AiAssistantSheet({ open, onOpenChange, editor, page, getBody, on
                   ))}
                 </ul>
               )}
+              {(images.length > 0 || uploading > 0) && (
+                <div className="max-h-[42vh] overflow-y-auto">
+                  {images.length > 0 && <AiImageTray items={images} onChange={setImages} onAddFiles={() => fileRef.current?.click()} onInsert={insertManual} onSuggest={suggestImages} canInsert={!!editor?.current?.insertMdx} busy={!!busy} />}
+                  {uploading > 0 && <p role="status" className="m-0 mt-1 text-xs text-ink-3">Subiendo {uploading} {uploading === 1 ? 'imagen' : 'imágenes'}…</p>}
+                </div>
+              )}
               {sel && <p className="m-0 truncate text-xs text-ink-3" title={sel.mdx}>Bloque seleccionado: <b className="font-medium text-ink-2">{BLOCK_NAME[sel.type] ?? sel.type}</b> · «{sel.mdx.replace(/\s+/g, ' ').slice(0, 60)}»</p>}
               <div className="flex flex-wrap gap-1.5" aria-label="Atajos sobre el bloque seleccionado">
                 {ASSIST_ACTIONS.map((a) => <Button key={a.id} size="sm" variant="ghost" disabled={!sel || !!busy} title={sel ? a.hint : 'Selecciona un bloque con texto en la página'} onClick={() => void quick(a)}>{a.label}</Button>)}
               </div>
               <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); void send(input); }}>
-                <Textarea ref={inputRef} aria-label="Mensaje para la IA" aria-autocomplete="list" rows={2} value={input} maxLength={CHAT_LIMITS.message + 100} placeholder="Escribe qué quieres hacer…  ( / comandos · @ páginas · Enter envía )"
+                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple hidden onChange={(e) => { void addFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+                <IconButton label="Adjuntar imágenes (la IA no las ve; solo su texto)" icon={<Paperclip size={15} />} disabled={images.length >= MAX_IMAGES} onClick={() => fileRef.current?.click()} />
+                <Textarea ref={inputRef} aria-label="Mensaje para la IA" onPaste={(e) => { const fs = Array.from(e.clipboardData.files).filter((x) => x.type.startsWith('image/')); if (fs.length) { e.preventDefault(); void addFiles(fs); } }} aria-autocomplete="list" rows={2} value={input} maxLength={CHAT_LIMITS.message + 100} placeholder="Escribe qué quieres hacer…  ( / comandos · @ páginas · Enter envía )"
                   className="min-h-[52px] flex-1 resize-none" onChange={(e) => onInput(e.target.value)} onKeyDown={onKey} />
                 {busy
                   ? <Button type="button" onClick={cancel} aria-label="Cancelar la petición"><Square size={14} /> Cancelar</Button>

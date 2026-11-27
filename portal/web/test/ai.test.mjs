@@ -270,3 +270,134 @@ test('historial guardado → elementos del chat (con el estado de cada propuesta
   assert.equal(shortDate(new Date(2026, 9, 12, 8, 0).toISOString(), now), '12 oct');
   assert.equal(shortDate('no es fecha', now), '');
 });
+
+// ---- presupuesto de tokens (plan gratuito de Groq: ~8.000 tokens/min)
+import { readFileSync } from 'node:fs';
+
+test('límite del PROVEEDOR vs límite propio: el primero se puede reintentar y dice los segundos; el segundo no', () => {
+  const prov = aiErrorInfo(429, 'La IA está al límite de su plan gratuito (8.000 tokens/min). Puedes reintentar en 12 s.', { code: 'AI_PROVIDER_LIMIT', retryAfter: 12 });
+  assert.equal(prov.kind, 'rate');
+  assert.equal(prov.canRetry, true);
+  assert.equal(prov.retryAfter, 12);
+  const own = aiErrorInfo(429, 'Llegaste al límite de uso del asistente del portal', { code: 'AI_RATE_LIMIT', retryAfter: 300 });
+  assert.equal(own.canRetry, false);
+});
+
+test('el historial que viaja al modelo es mínimo: mensajes viejos recortados, solo notas breves y nunca cuerpos de propuestas', () => {
+  const big = 'x'.repeat(3000);
+  const items = [
+    { id: 1, kind: 'user', text: big }, { id: 2, kind: 'assistant', text: big },
+    { id: 3, kind: 'proposal', proposal: { kind: 'edit', after: big, summary: 's' }, state: 'applied' },
+    { id: 4, kind: 'note', text: 'n'.repeat(500) },
+    { id: 5, kind: 'user', text: 'pregunta final' },
+  ];
+  const h = buildHistory(items);
+  assert.ok(h.length <= CHAT_LIMITS.messages);
+  const total = h.reduce((n, m) => n + m.content.length, 0);
+  assert.ok(total <= CHAT_LIMITS.chars, `total ${total}`);
+  assert.ok(h.slice(0, -1).every((m) => m.content.length <= CHAT_LIMITS.each + 10 + 160), 'los viejos van recortados');
+  assert.equal(h.at(-1).content, 'pregunta final', 'el último mensaje, íntegro');
+  assert.ok(!JSON.stringify(h).includes('"after"') && !h.some((m) => m.content.includes('kind')), 'ninguna propuesta viaja');
+  assert.ok(CHAT_LIMITS.selection <= 1500);
+});
+
+test('«Aplicar» y «Descartar» nunca llaman al modelo: ninguna función de aplicar toca runTurn/send/streamChat/assist', () => {
+  const src = readFileSync(new URL('../src/features/ai/AiAssistantSheet.tsx', import.meta.url), 'utf8');
+  const body = (name) => {
+    const i = src.indexOf(`const ${name} = `);
+    assert.ok(i >= 0, name);
+    const next = src.indexOf('\n  const ', i + 10);
+    return src.slice(i, next < 0 ? undefined : next);
+  };
+  for (const fn of ['applyCreate', 'applyOther', 'applyRewrite', 'markApplied', 'discard', 'savedState', 'askChanges']) {
+    const b = body(fn);
+    assert.ok(!/runTurn\(|[^a-zA-Z]send\(|streamChat\(|aiApi\.chat|aiApi\.assist|regenerate\(|retry\(/.test(b), `${fn} no debe llamar al modelo`);
+  }
+});
+
+// ---- indicador de consumo
+import { usagePct, usageLevel, usageLevelText, fmtTokens, resetCountdown, usageNow, usageSummary } from '../src/features/ai/aiModel.ts';
+
+test('indicador de consumo: % del cupo, umbrales (normal < 60, aviso 60-85, alto > 85), cuenta atrás y texto accesible', () => {
+  const u = { available: true, source: 'proveedor', tpm: 8000, tokensLimit: 8000, tokensRemaining: 5200, resetInSec: 31, requestsLimit: 1000, requestsRemaining: 977, updatedAt: 'x' };
+  assert.equal(usagePct(u), 35);
+  assert.equal(usageLevel(35), 'ok');
+  assert.equal(usageLevel(59), 'ok');
+  assert.equal(usageLevel(60), 'warn');
+  assert.equal(usageLevel(85), 'warn');
+  assert.equal(usageLevel(86), 'high');
+  assert.equal(usageLevelText('high'), 'Consumo alto');
+  assert.equal(usagePct({ ...u, tokensRemaining: 0 }), 100);
+  assert.equal(usagePct({ ...u, tokensRemaining: 9000 }), 0, 'nunca fuera de 0-100');
+  assert.equal(usagePct({ available: false, tpm: 8000 }), null, 'sin datos');
+  assert.equal(usagePct(null), null);
+  assert.equal(fmtTokens(8000), '8.000');
+  assert.equal(fmtTokens(1234567), '1.234.567');
+  assert.equal(fmtTokens(950), '950');
+  // cuenta atrás en el cliente
+  assert.equal(resetCountdown(u, 1000, 1000), 31);
+  assert.equal(resetCountdown(u, 1000, 11_000), 21);
+  assert.equal(resetCountdown(u, 1000, 60_000), 0);
+  assert.equal(resetCountdown({ ...u, resetInSec: null }, 0, 5000), null);
+  // al liberarse el cupo vuelve a 0 %
+  assert.equal(usagePct(usageNow(u, 1000, 60_000)), 0);
+  assert.equal(usageNow(u, 1000, 5000), u, 'antes del reinicio no cambia');
+  assert.match(usageSummary(u), /^35 % del cupo por minuto \(2\.800 de 8\.000 tokens\)$/);
+  assert.equal(usageSummary({ available: false, tpm: 8000 }), 'Sin datos todavía');
+});
+
+// ---- imágenes adjuntas (la IA no las ve)
+import { refOf, sizeMax, missingAlt, toContext, buildFigureMdx, reorder, captionFromName, figuresIn, MAX_IMAGES, SIZE_LABEL } from '../src/features/ai/imageModel.ts';
+
+const A = (n, extra = {}) => ({ uid: 'u' + n, path: `imgs/ia/0${n}-captura-${n}.webp`, name: `captura-${n}.png`, width: 1600, height: 900, caption: `Pie ${n}`, alt: `Alt ${n}`, size: 'full', where: '', ...extra });
+
+test('imágenes: referencias por orden, aviso de alt obligatorio y límite de 12', () => {
+  assert.equal(refOf(0), 'img1');
+  assert.equal(refOf(11), 'img12');
+  assert.deepEqual(missingAlt([A(1), A(2, { alt: '  ' }), A(3, { alt: '' })]), ['img2', 'img3']);
+  assert.deepEqual(missingAlt([A(1)]), []);
+  assert.equal(MAX_IMAGES, 12);
+  assert.deepEqual(Object.keys(SIZE_LABEL), ['full', 'medium', 'small']);
+  assert.equal(sizeMax('full', 1600), '1100px');
+  assert.equal(sizeMax('full', 800), '800px');
+  assert.equal(sizeMax('medium', 1600), '720px');
+  assert.equal(sizeMax('small', 1600), '420px');
+});
+
+test('imágenes: al servidor solo viaja texto y la ruta de un asset subido (nada de píxeles ni base64)', () => {
+  const ctx = toContext([A(1, { size: 'medium', where: 'paso 2' }), A(2)]);
+  assert.deepEqual(Object.keys(ctx[0]).sort(), ['alt', 'caption', 'name', 'path', 'ref', 'size', 'where']);
+  assert.equal(ctx[0].ref, 'img1');
+  assert.equal(ctx[1].ref, 'img2');
+  assert.equal(ctx[0].where, 'paso 2');
+  const wire = JSON.stringify(ctx);
+  assert.ok(!/data:|base64|blob:/.test(wire));
+  assert.equal(toContext(Array.from({ length: 15 }, (_, i) => A(i + 1))).length, 12);
+});
+
+test('imágenes: modo manual (cero IA) genera bloques Figure en el orden y con los parámetros dados; el motor de bloques los reescribe igual', () => {
+  const list = [A(2, { size: 'medium', caption: 'Segundo' }), A(1, { size: 'small', caption: '' })];
+  const mdx = buildFigureMdx(list);
+  assert.equal(mdx, '<Figure src="/assets/imgs/ia/02-captura-2.webp" alt="Alt 2" caption="Segundo" width={1600} height={900} max="720px" />\n\n<Figure src="/assets/imgs/ia/01-captura-1.webp" alt="Alt 1" width={1600} height={900} max="420px" />');
+  const blocks = parseMdx(mdx);
+  assert.deepEqual(blocks.map((b) => b.type), ['image', 'image']);
+  assert.equal(blocks[0].src, '/assets/imgs/ia/02-captura-2.webp');
+  assert.equal(blocks[0].max, '720px');
+  assert.equal(serializeBlocks(blocks), mdx, 'fidelidad: parse → serialize idéntico');
+  // un pie con comillas sigue siendo MDX válido (el motor lo escribe como expresión de texto)
+  const q = buildFigureMdx([A(1, { caption: 'Dice "hola"' })]);
+  assert.equal(serializeBlocks(parseMdx(q)), q);
+  assert.equal(buildFigureMdx([]), '');
+});
+
+test('imágenes: reordenar, sugerencia de pie y miniaturas de una propuesta', () => {
+  assert.deepEqual(reorder([1, 2, 3, 4], 0, 2), [2, 3, 1, 4]);
+  assert.deepEqual(reorder([1, 2, 3], 2, 0), [3, 1, 2]);
+  assert.deepEqual(reorder([1, 2, 3], 9, 0), [1, 2, 3]);
+  assert.equal(captionFromName('captura-login.png'), 'Captura login');
+  assert.equal(captionFromName('03_dashboard_final.webp'), 'Dashboard final');
+  assert.equal(captionFromName('.png'), '');
+  const figs = figuresIn('Texto\n\n<Figure src="/assets/imgs/ia/01-a.webp" alt="Panel" caption="Pie uno" width={40} height={30} max="40px" />\n\n<Figure src="/assets/imgs/ia/01-a.webp" alt="Otra" />\n<Figure src="/assets/imgs/ia/02-b.webp" alt="B" />');
+  assert.deepEqual(figs, [{ path: 'imgs/ia/01-a.webp', alt: 'Panel', caption: 'Pie uno' }, { path: 'imgs/ia/02-b.webp', alt: 'B', caption: '' }]);
+  assert.deepEqual(figuresIn('sin figuras'), []);
+});

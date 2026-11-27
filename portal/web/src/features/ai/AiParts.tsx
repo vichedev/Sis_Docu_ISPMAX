@@ -3,11 +3,13 @@
  * (página nueva editable, edición con diff, mover). Todo con componentes de @/components/ui, sin HTML crudo.
  */
 import { useMemo, useState } from 'react';
-import { BookOpen, Check, CircleAlert, FilePlus, ListTree, LoaderCircle, MessageCircleQuestion, MoveRight, Pencil, Search } from 'lucide-react';
+import { BookOpen, Check, CircleAlert, Clock, FilePlus, ListTree, LoaderCircle, MessageCircleQuestion, MoveRight, Pencil, Search } from 'lucide-react';
 import { Badge, Button, Callout, Input, Select } from '@/components/ui';
 import type { CreateProposal, EditProposal, MoveProposal, OutlineSection } from '@/lib/api.ai';
 import { cn } from '@/lib/cn';
+import { api } from '@/lib/api';
 import { BlockPreview } from '@/features/editor/BlockEditor';
+import { figuresIn } from './imageModel';
 import { NEW_GROUP, NO_GROUP, bodyWithTitle, cardFormFrom, cardGroup, cardProblems, cardToDraft, draftProblems, groupNames, lineDiff, parseMd, proposalKindLabel, resolveGroupClient, routeOf, slugOf, type CardForm, type DiffLine, type DraftForm, type MdInline } from './aiModel';
 
 const TIPOS = [['tarea', 'Tarea'], ['guia', 'Guía de pantalla'], ['problema', 'Problema'], ['pregunta', 'Pregunta frecuente'], ['referencia', 'Referencia'], ['concepto', 'Concepto']] as const;
@@ -29,7 +31,7 @@ export function Md({ text }: { text: string }) {
   );
 }
 
-const stepIcon = (label: string) => /secciones|estructura/i.test(label) ? ListTree : /Buscando/i.test(label) ? Search : /Leyendo/i.test(label) ? BookOpen : /pregunta/i.test(label) ? MessageCircleQuestion : /nueva/i.test(label) ? FilePlus : /mov/i.test(label) ? MoveRight : Pencil;
+const stepIcon = (label: string) => /Esperando/i.test(label) ? Clock : /secciones|estructura/i.test(label) ? ListTree : /Buscando/i.test(label) ? Search : /Leyendo/i.test(label) ? BookOpen : /pregunta/i.test(label) ? MessageCircleQuestion : /nueva/i.test(label) ? FilePlus : /mov/i.test(label) ? MoveRight : Pencil;
 /** Línea de actividad: lo que hace la IA en vivo («Consultando las secciones…»), que se resuelve al terminar. */
 export function ActivityLine({ steps, running }: { steps: { id: number; label: string; state: 'start' | 'done' | 'failed' }[]; running: boolean }) {
   if (!steps.length) return null;
@@ -89,9 +91,30 @@ export function MiniTree({ seccionLabel, group, pages, title, isNewGroup }: { se
   );
 }
 
+/** Miniaturas REALES de las imágenes que la propuesta coloca, junto a su pie; avisa si alguna se eliminó después. */
+export function FigureStrip({ text, missing }: { text: string; missing?: string[] }) {
+  const figs = figuresIn(text);
+  if (!figs.length) return null;
+  return (
+    <ul aria-label="Imágenes de la propuesta" className="m-0 flex list-none flex-col gap-1.5 p-0" data-testid="ai-figure-strip">
+      {figs.map((f) => {
+        const gone = missing?.includes(f.path);
+        return (
+          <li key={f.path} className="flex items-center gap-2 rounded-md border border-line bg-bg p-1.5 text-sm">
+            {gone ? <span className="grid size-12 shrink-0 place-items-center rounded-md border border-dashed border-line text-[11px] text-ink-4">Sin imagen</span>
+              : <img src={api.assetUrl(f.path)} alt="" width={48} height={48} className="size-12 shrink-0 rounded-md border border-line object-cover" />}
+            <span className="min-w-0 flex-1"><span className="block truncate font-medium text-ink-2">{f.caption || 'Sin pie'}</span><span className="block truncate text-xs text-ink-3">Alt: {f.alt || '—'}</span></span>
+            {gone && <Badge tone="warn">Imagen eliminada</Badge>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** Tarjeta de PÁGINA NUEVA con todo editable (sección, grupo, tipo, título y dirección) antes de «Crear borrador». */
-export function CreateCard({ proposal, outline, state, error, applying, openPageId, expired, onApply, onDiscard, onAskChanges, onOpen }: {
-  proposal: CreateProposal; outline: OutlineSection[]; state: string; error?: string; applying: boolean; openPageId?: number; expired?: boolean;
+export function CreateCard({ proposal, outline, state, error, applying, openPageId, expired, missing, onApply, onDiscard, onAskChanges, onOpen }: {
+  proposal: CreateProposal; outline: OutlineSection[]; state: string; error?: string; applying: boolean; openPageId?: number; expired?: boolean; missing?: string[];
   onApply: (draft: DraftForm) => void; onDiscard: () => void; onAskChanges: () => void; onOpen: () => void;
 }) {
   const [f, setF] = useState<CardForm>(() => cardFormFrom(proposal, outline));
@@ -143,13 +166,14 @@ export function CreateCard({ proposal, outline, state, error, applying, openPage
       <p className="m-0 text-sm text-ink-3">Quedará en <code className="font-mono text-[12.5px]">{routeOf(f.seccion, f.modulo, f.slug)}</code> como <b className="font-medium text-ink-2">borrador</b>{proposal.usesTemplate ? ' (estructura base del tipo)' : ''}.</p>
       {!readOnly && problems.length > 0 && <Callout tone="warn"><ul className="m-0 list-disc pl-5">{problems.map((p) => <li key={p}>{p}</li>)}</ul></Callout>}
       {expired && <Callout tone="warn">Propuesta guardada de una conversación anterior: revisa los datos antes de crearla.</Callout>}
+      <FigureStrip text={proposal.body} missing={missing} />
       <details className="text-sm"><summary className="cursor-pointer text-ink-2">Ver el contenido propuesto</summary>
         <div className="mt-2 max-h-64 overflow-auto rounded-md border border-line bg-bg p-3"><BlockPreview value={bodyWithTitle(proposal.body, f.title)} /></div></details>
     </CardShell>
   );
 }
 
-export function EditCard({ proposal, state, error, applying, expired, onApply, onDiscard, onAskChanges }: { proposal: EditProposal; state: string; error?: string; applying: boolean; expired?: boolean; onApply: () => void; onDiscard: () => void; onAskChanges: () => void }) {
+export function EditCard({ proposal, state, error, applying, expired, missing, onApply, onDiscard, onAskChanges }: { proposal: EditProposal; state: string; error?: string; applying: boolean; expired?: boolean; missing?: string[]; onApply: () => void; onDiscard: () => void; onAskChanges: () => void }) {
   const e = proposal;
   const d = lineDiff(e.hunk.before, e.hunk.after);
   return (
@@ -163,6 +187,7 @@ export function EditCard({ proposal, state, error, applying, expired, onApply, o
           {e.page.isOpen && state === 'pending' && <p className="m-0 text-sm text-ink-3">Se aplica en el editor sin guardar; podrás deshacerlo.</p>}
         </>
       )}
+      <FigureStrip text={e.hunk.after} missing={missing} />
       <DiffPane title="Antes" lines={d.before} tone="del" />
       <DiffPane title="Después" lines={d.after} tone="add" />
     </CardShell>

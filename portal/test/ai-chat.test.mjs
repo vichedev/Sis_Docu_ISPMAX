@@ -41,6 +41,7 @@ process.env.PORTAL_DATA_DIR = path.join(RUN, 'data');
 process.env.GROQ_API_KEY = '';
 process.env.GROQ_MODEL = '';
 process.env.PORTAL_AI_RATE = '1000';
+process.env.PORTAL_AI_TPM = '1000000'; // sin esperas por presupuesto salvo en las pruebas que lo piden
 process.env.GROQ_TIMEOUT_MS = '1500';
 
 const SENTINEL = 'gsk_CENTINELA_CHAT_7c1e90b3a45d2f68e1b0';
@@ -161,13 +162,13 @@ test('«crea una página tipo plantilla en Inicio llamada test de vice»: list_o
   assert.match(p.summary, /Crear la página «test de vice» en \/guia\/test-de-vice como borrador/);
   assert.deepEqual(await snapshot(), before, 'proponer no escribe nada');
   // el modelo vio las herramientas, el contexto y el resultado de list_outline
-  assert.equal(fake.calls.length, 3);
-  assert.deepEqual(fake.calls[0].body.tools.map((t) => t.function.name), ['list_outline', 'search_pages', 'read_page', 'propose_create_page', 'propose_edit_page', 'ask_choice', 'propose_move_page']);
+  assert.equal(fake.calls.length, 2, 'crear una página: 2 llamadas al modelo como máximo (la propuesta cierra el turno)');
+  assert.deepEqual(fake.calls[0].body.tools.map((t) => t.function.name), ['list_outline', 'search_pages', 'read_page', 'propose_create_page', 'ask_choice']);
   assert.equal(fake.calls[0].body.tool_choice, 'auto');
-  assert.match(fake.calls[0].body.messages[0].content, /Página abierta: id \d+, título «Clientes», ruta \/guia\/clientes/);
+  assert.match(fake.calls[0].body.messages[0].content, /Página abierta: id \d+, «Clientes», \/guia\/clientes/);
   assert.equal(fake.calls[0].body.messages[1].content, 'Crea una nueva pagina, tipo plantilla en la zona de inicio, llama test de vice');
-  assert.match(toolMsgs(1)[0], /grupo "Inicio": \[\d+\] Bienvenida/);
-  assert.match(toolMsgs(2)[1], /Propuesta registrada: crear «test de vice»/);
+  assert.match(toolMsgs(1)[0], /«Inicio» \(1\)/);
+  assert.match(r.json.reply, /Te propongo crear «test de vice»/, 'respuesta resumida por el servidor, sin llamada final al modelo');
   assert.ok(!JSON.stringify(fake.calls.map((c) => c.body)).includes(SENTINEL), 'la clave solo va en la cabecera');
   assert.equal(fake.calls[0].auth, `Bearer ${SENTINEL}`);
 });
@@ -185,14 +186,14 @@ test('pregunta aclaratoria: sin propuestas ni escrituras', async () => {
 
 test('propuesta con bloques: usa solo lo dado, sección con módulo y subsección; tareas sin módulo se pide', async () => {
   reset();
-  fake.script = [tc('propose_create_page', { title: 'Registrar un cobro', tipo: 'tarea', seccion: 'tareas', modulo: 'clientes', blocks: [{ type: 'lead', text: 'Registra un pago.' }, { type: 'steps', steps: [{ title: 'Abrir', text: 'Entrar a **Clientes**.' }] }] }), tc('propose_create_page', { title: 'Sin módulo', tipo: 'tarea', seccion: 'tareas', usar_plantilla: true }), say('ok')];
+  fake.script = [tc('propose_create_page', { title: 'Sin módulo', tipo: 'tarea', seccion: 'tareas', usar_plantilla: true }), tc('propose_create_page', { title: 'Registrar un cobro', tipo: 'tarea', seccion: 'tareas', modulo: 'clientes', blocks: [{ type: 'lead', text: 'Registra un pago.' }, { type: 'steps', steps: [{ title: 'Abrir', text: 'Entrar a **Clientes**.' }] }] }), say('ok')];
   const r = await chat('crea la tarea registrar un cobro');
   assert.equal(r.status, 200, r.body);
   assert.equal(r.json.proposals.length, 1);
   assert.equal(r.json.proposals[0].route, '/tareas/clientes/registrar-un-cobro');
   assert.match(r.json.proposals[0].body, /<Steps>\n<Step>\n\n\*\*Abrir\*\*/);
   assert.equal(r.json.proposals[0].usesTemplate, false);
-  assert.match(toolMsgs(2)[1], /Error: Las tareas necesitan un módulo/);
+  assert.match(toolMsgs(1)[0], /Error: Las tareas necesitan un módulo/);
 });
 
 test('editar la página ABIERTA: read_page devuelve el texto del editor y la propuesta lleva diff y cuerpo nuevo', async () => {
@@ -202,7 +203,7 @@ test('editar la página ABIERTA: read_page devuelve el texto del editor y la pro
   const before = await snapshot();
   const r = await chat('mejora la redacción de este párrafo', { page: { id: ids.clientes, title: 'Clientes', route: '/guia/clientes', seccion: 'guia', body: open } });
   assert.equal(r.status, 200, r.body);
-  assert.match(toolMsgs(1)[0], /"es_la_pagina_abierta":true/);
+  assert.match(toolMsgs(1)[0], /"abierta":true/);
   assert.match(toolMsgs(1)[0], /texto sin guardar/);
   const p = r.json.proposals[0];
   assert.equal(p.kind, 'edit');
@@ -223,7 +224,7 @@ test('editar OTRA página (publicada): ops replace, insert_after, append y delet
   const before = await snapshot();
   const r = await chat('en la página de clientes corrige el botón y añade una nota');
   assert.equal(r.status, 200, r.body);
-  assert.match(toolMsgs(1)[0], /"route":"\/guia\/clientes"/);
+  assert.match(toolMsgs(1)[0], /clientes/);
   const p = r.json.proposals[0];
   assert.equal(p.page.id, ids.clientes);
   assert.equal(p.page.isOpen, false);
@@ -255,7 +256,7 @@ test('editar OTRA página (publicada): ops replace, insert_after, append y delet
 
 test('mover: propuesta con destino resuelto; destinos inválidos no se registran', async () => {
   reset();
-  fake.script = [tc('propose_move_page', { page: ids.prob, seccion: 'guia', grupo: 'Inicio' }), tc('propose_move_page', { page: ids.tarea, parent_id: ids.clientes }), tc('propose_move_page', { page: 999999, seccion: 'guia' }), tc('propose_move_page', { page: ids.clientes }), tc('propose_move_page', { page: ids.clientes, grupo: 'General' }), say('ok')];
+  fake.script = [tc('propose_move_page', { page: ids.tarea, parent_id: ids.clientes }), tc('propose_move_page', { page: 999999, seccion: 'guia' }), tc('propose_move_page', { page: ids.clientes }), tc('propose_move_page', { page: ids.clientes, grupo: 'General' }), tc('propose_move_page', { page: ids.prob, seccion: 'guia', grupo: 'Inicio' }), say('ok')];
   const before = await snapshot();
   const r = await chat('mueve la página del problema a Inicio');
   assert.equal(r.status, 200, r.body);
@@ -265,11 +266,11 @@ test('mover: propuesta con destino resuelto; destinos inválidos no se registran
   assert.deepEqual(p.payload, { seccion: 'guia', grupo: 'Inicio' });
   assert.equal(p.page.id, ids.prob);
   assert.match(p.summary, /Mover «La pantalla no carga» a guia › Inicio/);
-  const msgs = toolMsgs(5);
-  assert.match(msgs[1], /misma sección de destino/);
-  assert.match(msgs[2], /no existe/);
-  assert.match(msgs[3], /Indica a dónde mover/);
-  assert.match(msgs[4], /no hay nada que mover/);
+  const msgs = toolMsgs(4);
+  assert.match(msgs[0], /misma sección de destino/);
+  assert.match(msgs[1], /no existe/);
+  assert.match(msgs[2], /Indica a dónde mover/);
+  assert.match(msgs[3], /no hay nada que mover/);
   assert.deepEqual(await snapshot(), before);
   // subsección válida
   reset();
@@ -355,7 +356,8 @@ test('errores del proveedor: 429, 401 (nunca 401 al panel), 400 de herramientas 
   fake.mode = 'rate';
   let r = await chat('hola');
   assert.equal(r.status, 429);
-  assert.equal(r.json.code, 'AI_RATE_LIMIT');
+  assert.equal(r.json.code, 'AI_PROVIDER_LIMIT', 'el 429 del proveedor es otro código que el límite propio (AI_RATE_LIMIT)');
+  assert.match(r.json.error, /plan gratuito/);
   reset();
   fake.mode = 'auth';
   r = await chat('hola');
@@ -431,7 +433,7 @@ test('auditoría (ai.chat, ai.apply) solo con tamaños y códigos; la clave no a
   const acts = new Set(rows.map((r) => r.action));
   for (const a of ['ai.chat', 'ai.apply', 'ai.error']) assert.ok(acts.has(a), a);
   const c = rows.find((r) => r.action === 'ai.chat');
-  assert.deepEqual(Object.keys(c.detail).sort(), ['chars_in', 'chars_out', 'incomplete', 'ms', 'model', 'proposals', 'rejected', 'tools'].sort());
+  assert.deepEqual(Object.keys(c.detail).sort(), ['chars_in', 'chars_out', 'completion_tokens', 'incomplete', 'ms', 'model', 'prompt_tokens', 'proposals', 'rejected', 'tools'].sort());
   const dump = JSON.stringify(rows);
   assert.ok(!dump.includes(SENTINEL));
   assert.ok(!dump.includes('Crea una nueva pagina'), 'la auditoría no guarda el texto de la conversación');

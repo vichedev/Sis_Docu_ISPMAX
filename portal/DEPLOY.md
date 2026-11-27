@@ -177,3 +177,5 @@ El editor tiene un asistente (reescribir, acortar, expandir, corregir, pasos) y 
 - Qué sale a un servicio externo y qué no: `portal/SECURITY.md` § 9.
 
 - Historial del asistente: `PORTAL_AI_HISTORY_DAYS` (def. 90; 0 = sin caducidad). Las conversaciones viven en las tablas `ai_*` de la BD, no entran en el paquete `.ispmax` ni en los respaldos `pg_dump` (datos excluidos a propósito).
+
+- Límite de tokens: `PORTAL_AI_TPM` (def. 8000, el plan gratuito de Groq). El asistente cuenta los tokens usados por minuto y espera unos segundos o avisa antes de pasarse. Las imágenes que se adjuntan al chat no salen del servidor (la IA solo recibe su texto).

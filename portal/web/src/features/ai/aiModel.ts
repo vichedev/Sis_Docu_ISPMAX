@@ -36,6 +36,8 @@ export function aiErrorInfo(status: number, message: string, data?: unknown): Ai
   const code = data && typeof data === 'object' ? (data as { code?: unknown }).code : undefined;
   const retryAfter = data && typeof data === 'object' && typeof (data as { retryAfter?: unknown }).retryAfter === 'number' ? (data as { retryAfter: number }).retryAfter : undefined;
   if (status === 0) return { kind: 'network', message: 'No se pudo conectar con el servidor del portal.', canRetry: true };
+  // Límite del PROVEEDOR (plan gratuito de Groq): se puede reintentar pasados los segundos indicados. El propio del portal (AI_RATE_LIMIT) no.
+  if (code === 'AI_PROVIDER_LIMIT') return { kind: 'rate', message, retryAfter, canRetry: true };
   if (code === 'AI_RATE_LIMIT' || status === 429) return { kind: 'rate', message, retryAfter, canRetry: false };
   if (code === 'AI_DISABLED') return { kind: 'config', message, canRetry: false };
   if (code === 'AI_KEY_INVALID') return { kind: 'config', message, canRetry: false };
@@ -124,10 +126,11 @@ export function bodyWithTitle(body: string, title: string): string {
 }
 
 // ---- Chat conversacional
-export const CHAT_LIMITS = { messages: 12, chars: 12_000, message: 4000, selection: 6000, pageBody: 60_000 };
+/** Lo que llega al modelo es poco a propósito: el plan gratuito de Groq da ~8.000 tokens/min (`each`: recorte de los mensajes viejos). */
+export const CHAT_LIMITS = { messages: 8, chars: 4000, message: 4000, each: 500, selection: 1500, pageBody: 60_000 };
 
 export type ChatItem =
-  | { id: number; kind: 'user'; text: string }
+  | { id: number; kind: 'user'; text: string; images?: { path: string; name: string }[] }
   | { id: number; kind: 'assistant'; text: string; streaming?: boolean; messageId?: number | null; choices?: { question: string; options: { label: string; value: string }[] } | null; rejected?: { kind: string; reason: string }[] }
   | { id: number; kind: 'activity'; steps: { id: number; label: string; state: 'start' | 'done' | 'failed' }[] }
   | { id: number; kind: 'proposal'; proposal: unknown; sentBody?: string; state: 'pending' | 'applied' | 'discarded' | 'error'; error?: string; openPageId?: number; messageId?: number | null; index?: number; expired?: boolean }
@@ -145,7 +148,7 @@ export function buildHistory(items: ChatItem[], limits = CHAT_LIMITS): { role: '
   for (const it of items) {
     if (it.kind === 'user') raw.push({ role: 'user', content: it.text.slice(0, limits.message) });
     else if (it.kind === 'assistant' && it.text.trim()) raw.push({ role: 'assistant', content: it.text.slice(0, limits.message) });
-    else if (it.kind === 'note') raw.push({ role: 'assistant', content: `[Nota del editor] ${it.text}`.slice(0, limits.message) });
+    else if (it.kind === 'note') raw.push({ role: 'assistant', content: `[Nota del editor] ${it.text}`.slice(0, 160) });
   }
   // fusiona consecutivos del mismo rol (el modelo admite alternancia libre, pero así se ahorra tamaño)
   const merged: typeof raw = [];
@@ -154,7 +157,7 @@ export function buildHistory(items: ChatItem[], limits = CHAT_LIMITS): { role: '
     if (last && last.role === m.role) last.content = `${last.content}\n${m.content}`.slice(0, limits.message);
     else merged.push({ ...m });
   }
-  let out = merged.slice(-limits.messages);
+  let out = merged.slice(-limits.messages).map((m, i, a) => (i === a.length - 1 || m.content.length <= limits.each ? m : { ...m, content: m.content.slice(0, limits.each) + '…' }));
   let total = out.reduce((n, m) => n + m.content.length, 0);
   while (out.length > 1 && total > limits.chars) { total -= out[0]!.content.length; out = out.slice(1); }
   while (out.length && out[0]!.role === 'assistant') out = out.slice(1);
@@ -377,4 +380,41 @@ export function shortDate(iso: string, now = new Date()): string {
   if (diff === 0) return `hoy ${hm}`;
   if (diff === 1) return `ayer ${hm}`;
   return `${d.getDate()} ${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][d.getMonth()]}`;
+}
+
+// ---- Indicador de consumo (tokens por minuto del plan de Groq)
+export interface AiUsage {
+  available: boolean; source?: 'proveedor' | 'local'; tpm: number; localUsed?: number; tokensLimit?: number; tokensRemaining?: number | null;
+  resetInSec?: number | null; requestsLimit?: number | null; requestsRemaining?: number | null; updatedAt?: string;
+}
+export type UsageLevel = 'ok' | 'warn' | 'high';
+const clampPct = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+/** % del cupo por minuto usado (null si no hay datos). */
+export function usagePct(u: AiUsage | null | undefined): number | null {
+  if (!u?.available || !u.tokensLimit || u.tokensRemaining == null) return null;
+  return clampPct((1 - u.tokensRemaining / u.tokensLimit) * 100);
+}
+/** Umbrales: normal < 60 %, aviso 60-85 %, alto > 85 %. */
+export const usageLevel = (pct: number): UsageLevel => (pct < 60 ? 'ok' : pct <= 85 ? 'warn' : 'high');
+export const usageLevelText = (l: UsageLevel): string => (l === 'ok' ? 'Consumo normal' : l === 'warn' ? 'Consumo moderado' : 'Consumo alto');
+/** 8000 → «8.000». */
+export const fmtTokens = (n: number): string => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+/** Segundos que faltan para el reinicio del cupo, contando desde la lectura (`fetchedAt`, ms) hasta `now` (ms). */
+export function resetCountdown(u: AiUsage | null | undefined, fetchedAt: number, now: number): number | null {
+  if (u?.resetInSec == null) return null;
+  return Math.max(0, Math.ceil(u.resetInSec - (now - fetchedAt) / 1000));
+}
+/** Con el cupo liberado (cuenta atrás a 0) el consumo vuelve a 0 %. */
+export function usageNow(u: AiUsage | null | undefined, fetchedAt: number, now: number): AiUsage | null {
+  if (!u?.available) return u ?? null;
+  const left = resetCountdown(u, fetchedAt, now);
+  if (left === 0 && u.tokensLimit) return { ...u, tokensRemaining: u.tokensLimit, resetInSec: 0 };
+  return u;
+}
+/** Texto accesible del medidor (no depende del color). */
+export function usageSummary(u: AiUsage | null | undefined): string {
+  const pct = usagePct(u);
+  if (pct == null || !u?.tokensLimit) return 'Sin datos todavía';
+  const used = u.tokensLimit - (u.tokensRemaining ?? u.tokensLimit);
+  return `${pct} % del cupo por minuto (${fmtTokens(used)} de ${fmtTokens(u.tokensLimit)} tokens)`;
 }
